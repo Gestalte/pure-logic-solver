@@ -37,16 +37,20 @@ int main(void)
 
     for (int i = 0; i < GATECOUNT; i++)
     {
-        toggleRecs[i] = (Rectangle){((float)rectX + (i * 100)), ((float)rectY + 10), 100.0f, 50.0f};
+        toggleRecs[i] = (Rectangle){((float)rectX + (i * 100.0f)), ((float)rectY + 10.0f), 100.0f, 50.0f};
     }
 
     int gateIndex = 0;
     int IsEditMode = 1;
+    int levels = 1;
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     //---------------------------------------------------------------------------------------
 
     Rectangle saveEditRect = {(float)screenWidth / 2 - 50, (float)screenHeight - (screenHeight - 20), 100.0f, 30.0f};
+    Rectangle decrementLevelsRect = {saveEditRect.x + 100 + 10, (float)screenHeight - (screenHeight - 20), 50.0f, 30.0f};
+    Rectangle incrementLevelsRect = {decrementLevelsRect.x + 110, (float)screenHeight - (screenHeight - 20), 50.0f, 30.0f};
+
     char* SaveEditButtonText = "Edit";
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -63,8 +67,17 @@ int main(void)
 
         if (IsEditMode)
         {
-            // TODO: Add a button for switching to IsEditMode false.
-            // TODO: Add two buttons and a text label that increase and decrease the number of gates.
+            // Handle click for Increment and Decrement levels
+            if (CheckCollisionPointRec(GetMousePosition(), incrementLevelsRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+            {
+                levels++;
+            }
+            if (CheckCollisionPointRec(GetMousePosition(), decrementLevelsRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+            {
+                levels--;
+            }
+
+            // TODO: increase and decrease the number of gates based on the number of levels.
             // TODO: clicking on a gate should open a menu where you can pick a different gate in the chosen gate's place.
             // TODO: Add lines between gates
             // TODO: clickin on a line should toggle line state, gray, black, white.
@@ -81,7 +94,7 @@ int main(void)
         else
         {
             // TODO: Keep showing gates, but don't check them for mouse clicks.
-            // TODO: Lins can be gray, black or white.
+            // TODO: Lines can be gray, black or white.
             // TODO: Add an indicator icon for if the input and output of the gate is correct.
             // TODO: clickin on a line should toggle line state, gray, black, white lines set in edit mode should not be able to change.
         }
@@ -96,12 +109,36 @@ int main(void)
         {
             SaveEditButtonText = "Save";
 
+            // Select gate box
             DrawRectangle(rectX, rectY, rectWidth, rectHeight, RAYWHITE);
 
             for (int i = 0; i < GATECOUNT; ++i)
             {
                 DrawTexture(gateTextures[i], rectX + (i * 100), rectY + 10, WHITE);
             }
+
+            // Decrement levels button
+            DrawRectangle((int)decrementLevelsRect.x, (int)decrementLevelsRect.y, (int)decrementLevelsRect.width, (int)decrementLevelsRect.height, LIGHTGRAY);
+            DrawRectangleLines((int)decrementLevelsRect.x, (int)decrementLevelsRect.y, (int)decrementLevelsRect.width, (int)decrementLevelsRect.height, DARKGRAY);
+            DrawText("-", (int)(decrementLevelsRect.x + (decrementLevelsRect.width / 2) - 4), (int)(decrementLevelsRect.y + (decrementLevelsRect.height / 4)), 16, BLACK);
+
+            // Number of levels text
+            // clamp betwen 1 and 6
+            if (levels < 1)
+            {
+                levels = 1;
+            }
+            if (levels > 6)
+            {
+                levels = 6;
+            }
+            char levelText[2] = {(char)(levels + 48), '\0'}; // convert int to string
+            DrawText(levelText, (int)(decrementLevelsRect.x + 50 + (decrementLevelsRect.width / 2)), (int)(decrementLevelsRect.y + (decrementLevelsRect.height / 4)), 16, BLACK);
+
+            // Increment levels button
+            DrawRectangle((int)incrementLevelsRect.x, (int)incrementLevelsRect.y, (int)incrementLevelsRect.width, (int)incrementLevelsRect.height, LIGHTGRAY);
+            DrawRectangleLines((int)incrementLevelsRect.x, (int)incrementLevelsRect.y, (int)incrementLevelsRect.width, (int)incrementLevelsRect.height, DARKGRAY);
+            DrawText("+", (int)(incrementLevelsRect.x + (incrementLevelsRect.width / 2) - 4), (int)(incrementLevelsRect.y + (incrementLevelsRect.height / 4)), 16, BLACK);
         }
         else
         {
@@ -110,9 +147,9 @@ int main(void)
 
         DrawTexture(gateTextures[gateIndex], (screenWidth / 2) - 50, (screenHeight / 2) - 25, WHITE);
 
-        DrawRectangle(saveEditRect.x, saveEditRect.y, saveEditRect.width, saveEditRect.height, LIGHTGRAY);
-        DrawRectangleLines(saveEditRect.x, saveEditRect.y, saveEditRect.width, saveEditRect.height, DARKGRAY);
-        DrawText(SaveEditButtonText, saveEditRect.x + (saveEditRect.width / 3), saveEditRect.y + (saveEditRect.height / 4), 16, BLACK);
+        DrawRectangle((int)saveEditRect.x, (int)saveEditRect.y, (int)saveEditRect.width, (int)saveEditRect.height, LIGHTGRAY);
+        DrawRectangleLines((int)saveEditRect.x, (int)saveEditRect.y, (int)saveEditRect.width, (int)saveEditRect.height, DARKGRAY);
+        DrawText(SaveEditButtonText, (int)(saveEditRect.x + (saveEditRect.width / 3)), (int)(saveEditRect.y + (saveEditRect.height / 4)), 16, BLACK);
 
         EndDrawing();
         //----------------------------------------------------------------------------------
