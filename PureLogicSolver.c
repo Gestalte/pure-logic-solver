@@ -40,9 +40,10 @@ int main(void)
         toggleRecs[i] = (Rectangle){((float)rectX + (i * 100.0f)), ((float)rectY + 10.0f), 100.0f, 50.0f};
     }
 
+    // index of the gate selected in the edit gate menu thing.
     int gateIndex = 0;
     int IsEditMode = 1;
-    int levels = 1;
+    char levels = 1;
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     //---------------------------------------------------------------------------------------
