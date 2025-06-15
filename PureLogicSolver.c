@@ -2,6 +2,12 @@
 #define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
 #define GATECOUNT 6
 
+struct gate
+{
+    Texture2D texture;
+    Rectangle rect;
+};
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -9,9 +15,9 @@ int main(void)
 {
     // Initialization
     //--------------------------------------------------------------------------------------
+
     const int screenWidth = 800;
     const int screenHeight = 450;
-
     InitWindow(screenWidth, screenHeight, "Pure Logic Solver");
 
     // NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
@@ -28,16 +34,20 @@ int main(void)
         UnloadImage(img);
     }
 
-    int rectHeight = 70;
-    int rectWidth = 600;
-    int rectX = (screenWidth / 2) - (rectWidth / 2);
-    int rectY = screenHeight - (rectHeight + 10);
+    struct Rectangle gateMenuRect;
+    gateMenuRect.width = 600.0f;
+    gateMenuRect.height = 70.0f;
+    gateMenuRect.x = ((float)screenWidth / 2) - (gateMenuRect.width / 2);
+    gateMenuRect.y = (float)screenHeight - (gateMenuRect.height + 10);
 
-    Rectangle toggleRecs[GATECOUNT] = {0};
+    struct gate gateMenuItems[GATECOUNT];
 
     for (int i = 0; i < GATECOUNT; i++)
     {
-        toggleRecs[i] = (Rectangle){((float)rectX + (i * 100.0f)), ((float)rectY + 10.0f), 100.0f, 50.0f};
+        struct gate menuGate;
+        menuGate.texture = gateTextures[i];
+        menuGate.rect = (Rectangle){(gateMenuRect.x + (i * 100.0f)), (gateMenuRect.y + 10.0f), 100.0f, 50.0f};
+        gateMenuItems[i] = menuGate;
     }
 
     // index of the gate selected in the edit gate menu thing.
@@ -45,21 +55,29 @@ int main(void)
     int IsEditMode = 1;
     char levels = 1;
 
-    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
-    //---------------------------------------------------------------------------------------
+    struct gate gates[GATECOUNT];
 
     Rectangle saveEditRect = {(float)screenWidth / 2 - 50, (float)screenHeight - (screenHeight - 20), 100.0f, 30.0f};
     Rectangle decrementLevelsRect = {saveEditRect.x + 100 + 10, (float)screenHeight - (screenHeight - 20), 50.0f, 30.0f};
     Rectangle incrementLevelsRect = {decrementLevelsRect.x + 110, (float)screenHeight - (screenHeight - 20), 50.0f, 30.0f};
 
     char* SaveEditButtonText = "Edit";
+
+    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update
         //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
+        int startingX = (screenWidth / 2) - 50 * levels;
+        for (int i = 0; i < GATECOUNT; ++i)
+        {
+            struct gate gate;
+            gate.texture = gateTextures[0];
+            struct Rectangle gateRect = {startingX + (i * 100), ((float)screenHeight / 2) - 25.0f, 100.0f, 50.0f};
+            gate.rect = gateRect;
+            gates[i] = gate;
+        }
 
         if (CheckCollisionPointRec(GetMousePosition(), saveEditRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
         {
@@ -85,7 +103,7 @@ int main(void)
 
             for (int i = 0; i < GATECOUNT; i++)
             {
-                if (CheckCollisionPointRec(GetMousePosition(), toggleRecs[i]) && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+                if (CheckCollisionPointRec(GetMousePosition(), gateMenuItems[i].rect) && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                 {
                     gateIndex = i;
                     break;
@@ -103,19 +121,17 @@ int main(void)
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
-        // RAYWHITE
         ClearBackground(BACKGROUNDBLUE);
 
         if (IsEditMode)
         {
             SaveEditButtonText = "Save";
 
-            // Select gate box
-            DrawRectangle(rectX, rectY, rectWidth, rectHeight, RAYWHITE);
-
+            // Gate menu
+            DrawRectangle((int)gateMenuRect.x, (int)gateMenuRect.y, (int)gateMenuRect.width, (int)gateMenuRect.height, RAYWHITE);
             for (int i = 0; i < GATECOUNT; ++i)
             {
-                DrawTexture(gateTextures[i], rectX + (i * 100), rectY + 10, WHITE);
+                DrawTexture(gateMenuItems[i].texture, (int)gateMenuRect.x + (i * 100), (int)gateMenuRect.y + 10, WHITE);
             }
 
             // Decrement levels button
@@ -146,8 +162,13 @@ int main(void)
             SaveEditButtonText = "Edit";
         }
 
-        DrawTexture(gateTextures[gateIndex], (screenWidth / 2) - 50, (screenHeight / 2) - 25, WHITE);
+        // Gates at screen center.
+        for (int i = 0; i < levels; ++i)
+        {
+            DrawTexture(gates[i].texture, (int)gates[i].rect.x, (int)gates[i].rect.y, WHITE);
+        }
 
+        // Save/Edit button
         DrawRectangle((int)saveEditRect.x, (int)saveEditRect.y, (int)saveEditRect.width, (int)saveEditRect.height, LIGHTGRAY);
         DrawRectangleLines((int)saveEditRect.x, (int)saveEditRect.y, (int)saveEditRect.width, (int)saveEditRect.height, DARKGRAY);
         DrawText(SaveEditButtonText, (int)(saveEditRect.x + (saveEditRect.width / 3)), (int)(saveEditRect.y + (saveEditRect.height / 4)), 16, BLACK);
