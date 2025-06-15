@@ -2,25 +2,30 @@
 #define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
 #define GATECOUNT 6
 
-struct gate
+struct image2D
 {
-    Texture2D texture;
+    Texture2D* texture;
     Rectangle rect;
 };
 
-int clampInclusive(int value, int min, int max)
+// TODO: Maybe make a struct for straight input lines for leftmost inputs
+struct gate
 {
-    if (value <= min)
-    {
-        value = min;
-    }
+    struct image2D gate;
+    struct image2D outputLine;
+    struct image2D successIndicator;
+    struct gate* parent;
+    // Children are responsible for drawing input lines
+    struct gate* childA;
+    struct gate* childB;
+    // inputLines should be used when the gate has no children.
+    struct image2D inputLineA;
+    struct image2D inputLineB;
+};
 
-    if (value >= max)
-    {
-        value = max;
-    }
-
-    return value;
+static int clampInclusive(int value, int min, int max)
+{
+    return value <= min ? min : value >= max ? max : value;
 }
 
 //------------------------------------------------------------------------------------
@@ -55,12 +60,12 @@ int main(void)
     gateMenuRect.x = ((float)screenWidth / 2) - (gateMenuRect.width / 2);
     gateMenuRect.y = (float)screenHeight - (gateMenuRect.height + 10);
 
-    struct gate gateMenuItems[GATECOUNT];
+    struct image2D gateMenuItems[GATECOUNT];
 
     for (int i = 0; i < GATECOUNT; i++)
     {
-        struct gate menuGate;
-        menuGate.texture = gateTextures[i];
+        struct image2D menuGate;
+        menuGate.texture = &gateTextures[i];
         menuGate.rect = (Rectangle){(gateMenuRect.x + (i * 100.0f)), (gateMenuRect.y + 10.0f), 100.0f, 50.0f};
         gateMenuItems[i] = menuGate;
     }
@@ -69,12 +74,12 @@ int main(void)
     int IsEditMode = 1;
     char levels = 1;
 
-    struct gate gates[GATECOUNT];
+    struct image2D gates[GATECOUNT];
 
     for (int i = 0; i < GATECOUNT; ++i)
     {
-        struct gate gate;
-        gate.texture = gateTextures[0];
+        struct image2D gate;
+        gate.texture = &gateTextures[0];
         gates[i] = gate;
     }
 
@@ -112,7 +117,7 @@ int main(void)
             {
                 levels++;
                 levels = clampInclusive(levels, 1, 6);
-                gates[levels - 1].texture = gateTextures[0];
+                gates[levels - 1].texture = &gateTextures[0];
             }
             if (CheckCollisionPointRec(GetMousePosition(), decrementLevelsRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
@@ -169,7 +174,7 @@ int main(void)
                 DrawRectangle((int)gateMenuRect.x, (int)gateMenuRect.y, (int)gateMenuRect.width, (int)gateMenuRect.height, RAYWHITE);
                 for (int i = 0; i < GATECOUNT; ++i)
                 {
-                    DrawTexture(gateMenuItems[i].texture, (int)gateMenuRect.x + (i * 100), (int)gateMenuRect.y + 10, WHITE);
+                    DrawTexture(*gateMenuItems[i].texture, (int)gateMenuRect.x + (i * 100), (int)gateMenuRect.y + 10, WHITE);
                 }
             }
 
@@ -194,7 +199,7 @@ int main(void)
         // Gates at screen center.
         for (int i = 0; i < levels; ++i)
         {
-            DrawTexture(gates[i].texture, (int)gates[i].rect.x, (int)gates[i].rect.y, WHITE);
+            DrawTexture(*gates[i].texture, (int)gates[i].rect.x, (int)gates[i].rect.y, WHITE);
         }
 
         // Save/Edit button
