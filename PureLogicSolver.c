@@ -50,12 +50,18 @@ int main(void)
         gateMenuItems[i] = menuGate;
     }
 
-    // index of the gate selected in the edit gate menu thing.
-    int gateIndex = 0;
+    int gateIndex = -1;
     int IsEditMode = 1;
     char levels = 1;
 
     struct gate gates[GATECOUNT];
+
+    for (int i = 0; i < GATECOUNT; ++i)
+    {
+        struct gate gate;
+        gate.texture = gateTextures[0];
+        gates[i] = gate;
+    }
 
     Rectangle saveEditRect = {(float)screenWidth / 2 - 50, (float)screenHeight - (screenHeight - 20), 100.0f, 30.0f};
     Rectangle decrementLevelsRect = {saveEditRect.x + 100 + 10, (float)screenHeight - (screenHeight - 20), 50.0f, 30.0f};
@@ -69,14 +75,13 @@ int main(void)
     {
         // Update
         //----------------------------------------------------------------------------------
+
+        // Set positions gates should draw at.
         int startingX = (screenWidth / 2) - 50 * levels;
-        for (int i = 0; i < GATECOUNT; ++i)
+        for (int i = 0; i < GATECOUNT; ++i) // FIXME: Currently the gates draw from left to right so new gates are shown to the right of current gates.
         {
-            struct gate gate;
-            gate.texture = gateTextures[0];
             struct Rectangle gateRect = {startingX + (i * 100), ((float)screenHeight / 2) - 25.0f, 100.0f, 50.0f};
-            gate.rect = gateRect;
-            gates[i] = gate;
+            gates[i].rect = gateRect;
         }
 
         if (CheckCollisionPointRec(GetMousePosition(), saveEditRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
@@ -90,6 +95,7 @@ int main(void)
             if (CheckCollisionPointRec(GetMousePosition(), incrementLevelsRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
                 levels++;
+                gates[levels - 1].texture = gateTextures[0];
             }
             if (CheckCollisionPointRec(GetMousePosition(), decrementLevelsRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
@@ -101,9 +107,21 @@ int main(void)
             // TODO: Add lines between gates
             // TODO: clickin on a line should toggle line state, gray, black, white.
 
+            // handles click for gate menu items.
             for (int i = 0; i < GATECOUNT; i++)
             {
                 if (CheckCollisionPointRec(GetMousePosition(), gateMenuItems[i].rect) && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+                {
+                    gates[gateIndex].texture = gateMenuItems[i].texture;
+                    gateIndex = -1;
+                    break;
+                }
+            }
+
+            // handle click for gates
+            for (int i = 0; i < levels; ++i)
+            {
+                if (CheckCollisionPointRec(GetMousePosition(), gates[i].rect) && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                 {
                     gateIndex = i;
                     break;
@@ -128,10 +146,13 @@ int main(void)
             SaveEditButtonText = "Save";
 
             // Gate menu
-            DrawRectangle((int)gateMenuRect.x, (int)gateMenuRect.y, (int)gateMenuRect.width, (int)gateMenuRect.height, RAYWHITE);
-            for (int i = 0; i < GATECOUNT; ++i)
+            if (gateIndex != -1) // Only show gate menu when a gate is selected.
             {
-                DrawTexture(gateMenuItems[i].texture, (int)gateMenuRect.x + (i * 100), (int)gateMenuRect.y + 10, WHITE);
+                DrawRectangle((int)gateMenuRect.x, (int)gateMenuRect.y, (int)gateMenuRect.width, (int)gateMenuRect.height, RAYWHITE);
+                for (int i = 0; i < GATECOUNT; ++i)
+                {
+                    DrawTexture(gateMenuItems[i].texture, (int)gateMenuRect.x + (i * 100), (int)gateMenuRect.y + 10, WHITE);
+                }
             }
 
             // Decrement levels button
