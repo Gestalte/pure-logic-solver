@@ -8,6 +8,21 @@ struct gate
     Rectangle rect;
 };
 
+int clampInclusive(int value, int min, int max)
+{
+    if (value <= min)
+    {
+        value = min;
+    }
+
+    if (value >= max)
+    {
+        value = max;
+    }
+
+    return value;
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -70,6 +85,7 @@ int main(void)
     char* SaveEditButtonText = "Edit";
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
@@ -95,15 +111,15 @@ int main(void)
             if (CheckCollisionPointRec(GetMousePosition(), incrementLevelsRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
                 levels++;
+                levels = clampInclusive(levels, 1, 6);
                 gates[levels - 1].texture = gateTextures[0];
             }
             if (CheckCollisionPointRec(GetMousePosition(), decrementLevelsRect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
                 levels--;
+                levels = clampInclusive(levels, 1, 6);
             }
 
-            // TODO: increase and decrease the number of gates based on the number of levels.
-            // TODO: clicking on a gate should open a menu where you can pick a different gate in the chosen gate's place.
             // TODO: Add lines between gates
             // TODO: clickin on a line should toggle line state, gray, black, white.
 
@@ -112,8 +128,11 @@ int main(void)
             {
                 if (CheckCollisionPointRec(GetMousePosition(), gateMenuItems[i].rect) && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                 {
-                    gates[gateIndex].texture = gateMenuItems[i].texture;
-                    gateIndex = -1;
+                    if (gateIndex != -1)
+                    {
+                        gates[gateIndex].texture = gateMenuItems[i].texture;
+                        gateIndex = -1;
+                    }
                     break;
                 }
             }
@@ -130,7 +149,6 @@ int main(void)
         }
         else
         {
-            // TODO: Keep showing gates, but don't check them for mouse clicks.
             // TODO: Lines can be gray, black or white.
             // TODO: Add an indicator icon for if the input and output of the gate is correct.
             // TODO: clickin on a line should toggle line state, gray, black, white lines set in edit mode should not be able to change.
@@ -160,16 +178,6 @@ int main(void)
             DrawRectangleLines((int)decrementLevelsRect.x, (int)decrementLevelsRect.y, (int)decrementLevelsRect.width, (int)decrementLevelsRect.height, DARKGRAY);
             DrawText("-", (int)(decrementLevelsRect.x + (decrementLevelsRect.width / 2) - 4), (int)(decrementLevelsRect.y + (decrementLevelsRect.height / 4)), 16, BLACK);
 
-            // Number of levels text
-            // clamp betwen 1 and 6
-            if (levels < 1)
-            {
-                levels = 1;
-            }
-            if (levels > 6)
-            {
-                levels = 6;
-            }
             char levelText[2] = {(char)(levels + 48), '\0'}; // convert int to string
             DrawText(levelText, (int)(decrementLevelsRect.x + 50 + (decrementLevelsRect.width / 2)), (int)(decrementLevelsRect.y + (decrementLevelsRect.height / 4)), 16, BLACK);
 
