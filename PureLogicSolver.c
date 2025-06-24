@@ -53,11 +53,27 @@ int main(void)
 
     Texture2D gateTextures[GATECOUNT];
 
+    // Images are 50 x 50 px
+    char* lineNames[GATECOUNT] = {
+        "resources/input_black.png",
+        "resources/input_gray.png",
+        "resources/input_white.png",
+        "resources/output_black.png",
+        "resources/output_gray.png",
+        "resources/output_white.png",
+    };
+
+    Texture2D lineTextures[GATECOUNT];
+
     for (int i = 0; i < GATECOUNT; ++i)
     {
         Image img       = LoadImage(gateNames[i]);
         gateTextures[i] = LoadTextureFromImage(img);
         UnloadImage(img);
+
+        Image line      = LoadImage(lineNames[i]);
+        lineTextures[i] = LoadTextureFromImage(line);
+        UnloadImage(line);
     }
 
     Rectangle gateMenuRect = {
