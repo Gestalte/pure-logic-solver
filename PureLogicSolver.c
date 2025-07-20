@@ -1,7 +1,7 @@
 #include "raylib.h"
 #define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
 #define GATECOUNT 6
-#define LINECOUNT 3 // TODO: Update with real line count (6?)
+#define LINECOUNT 15
 
 struct image2D
 {
@@ -13,15 +13,9 @@ struct image2D
 struct gate
 {
     struct image2D gate;
-    struct image2D outputLine;
-    struct image2D successIndicator;
     struct gate* parent;
-    // Children are responsible for drawing input lines
-    struct gate* childA;
-    struct gate* childB;
-    // inputLines should be used when the gate has no children.
-    struct image2D inputLineA;
-    struct image2D inputLineB;
+    struct gate* leftChild;
+    struct gate* rightChild;
 };
 
 struct ButtonData
@@ -73,12 +67,12 @@ int main(void)
 
     // Images are 100 x 50 px
     char* gateNames[GATECOUNT] = {
-        "resources/AND.png",
-        "resources/NAND.png",
-        "resources/NOR.png",
-        "resources/OR.png",
-        "resources/XNOR.png",
-        "resources/XOR.png"};
+        "resources/gates/AND.png",
+        "resources/gates/NAND.png",
+        "resources/gates/NOR.png",
+        "resources/gates/OR.png",
+        "resources/gates/XNOR.png",
+        "resources/gates/XOR.png"};
 
     Texture2D gateTextures[GATECOUNT];
 
@@ -89,12 +83,26 @@ int main(void)
         UnloadImage(img);
     }
 
-    // TODO: Make output lines that go up or down and draw them on top of each other to get the -[ shape.
-    // Images are 50 x 50 px
     char* lineNames[LINECOUNT] = {
-        "resources/input_black.png",
-        "resources/input_gray.png",
-        "resources/input_white.png",
+        "resources/lines/up_white.png",
+        "resources/lines/up_gray.png",
+        "resources/lines/up_black.png",
+
+        "resources/lines/straight_white.png",
+        "resources/lines/straight_gray.png",
+        "resources/lines/straight_black.png",
+
+        "resources/lines/fork_white.png",
+        "resources/lines/fork_gray.png",
+        "resources/lines/fork_black.png",
+
+        "resources/lines/dual_white.png",
+        "resources/lines/dual_gray.png",
+        "resources/lines/dual_black.png",
+
+        "resources/lines/down_white.png",
+        "resources/lines/down_gray.png",
+        "resources/lines/down_black.png",
     };
 
     Texture2D lineTextures[LINECOUNT];
@@ -118,9 +126,9 @@ int main(void)
         gateMenuItems[i] = menuGate;
     }
 
-    int gateIndex  = -1;
-    int IsEditMode = 1;
-    char levels    = 1;
+    int selectedGateIndex = -1;
+    int IsEditMode        = 1;
+    char levels           = 1;
 
     struct ButtonData saveEditButton = {
         {(float)screenWidth / 2 - 50, (float)screenHeight - (screenHeight - 20), 100.0f, 30.0f}, "Edit"};
@@ -185,10 +193,10 @@ int main(void)
                 if (CheckCollisionPointRec(GetMousePosition(), gateMenuItems[i].rect) &&
                     IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                 {
-                    if (gateIndex != -1)
+                    if (selectedGateIndex != -1)
                     {
-                        gates[gateIndex].gate.texture = gateMenuItems[i].texture;
-                        gateIndex                     = -1;
+                        gates[selectedGateIndex].gate.texture = gateMenuItems[i].texture;
+                        selectedGateIndex                     = -1;
                     }
                     break;
                 }
@@ -200,7 +208,7 @@ int main(void)
                 if (CheckCollisionPointRec(GetMousePosition(), gates[i].gate.rect) &&
                     IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                 {
-                    gateIndex = i;
+                    selectedGateIndex = i;
                     break;
                 }
             }
@@ -223,7 +231,7 @@ int main(void)
             saveEditButton.text = "Save";
 
             // Gate menu
-            if (gateIndex != -1) // Only show gate menu when a gate is selected.
+            if (selectedGateIndex != -1) // Only show gate menu when a gate is selected.
             {
                 DrawRectangle(
                     (int)gateMenuRect.x,
