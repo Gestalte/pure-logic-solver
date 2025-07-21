@@ -21,12 +21,6 @@ typedef struct
     rect rect;
 } image2D;
 
-// typedef struct
-// {
-//     image2D *image;
-//     struct gate *gate;
-// } outputLine;
-
 // TODO: Maybe make a struct for straight input lines for leftmost inputs
 typedef struct
 {
@@ -46,15 +40,23 @@ typedef struct
     char *text;
 } ButtonData;
 
+static void EditTreeBasedOnLevel(gate *currentGate, int targetLevel)
+{
+}
+
+static void CheckForGateComplexClick(gate *currentGate, int currentLevel, int maxLevel, int columnCount)
+{
+}
+
 static void UpdateGateComplex(
-    gate *currentGate, int currentLevel, int maxLevel, int columnCount, int screenWidth, int screenHeight)
+    gate *currentGate, int currentLevel, int maxLevel, int columnCount, int screenWidth, int screenHeight, gate *parent)
 {
     int totalWidth  = 100 * maxLevel;
     int totalHeight = 50 * maxLevel;
     int width       = 100;
     int height      = 50;
-    int x           = (screenWidth / 2) - 50;
-    int y           = (screenHeight / 2) - 25;
+    int x           = ((screenWidth / 2) - 50) + (totalWidth - (currentLevel * 50));
+    int y           = ((screenHeight / 2) - 25) + (50 * (columnCount - 1));
 
     currentGate->image.rect = (rect){x, y, width, height};
 
@@ -65,6 +67,38 @@ static void UpdateGateComplex(
         image2D img             = {&lineTextures[4], lineRect};
         currentGate->outputLine = img;
         currentGate->parent     = 0; // Root doesn't have a parent.
+    }
+    else
+    {
+        rect *r                 = &currentGate->image.rect;
+        rect lineRect           = {r->x + (r->width / 2), r->y, 50, 50};
+        image2D img             = {&lineTextures[7], lineRect};
+        currentGate->outputLine = img;
+        currentGate->parent     = (struct gate *)parent;
+    }
+
+    if (currentGate->leftChild)
+    {
+        UpdateGateComplex(
+            (gate *)currentGate->leftChild,
+            currentLevel + 1,
+            maxLevel,
+            columnCount + 1,
+            screenWidth,
+            screenHeight,
+            currentGate);
+    }
+
+    if (currentGate->rightChild)
+    {
+        UpdateGateComplex(
+            (gate *)currentGate->rightChild,
+            currentLevel + 1,
+            maxLevel,
+            columnCount + 2,
+            screenWidth,
+            screenHeight,
+            currentGate);
     }
 
     columnCount++;
@@ -90,6 +124,27 @@ static void DrawGateComplex(gate *currentGate, int currentLevel, int maxLevel, i
             currentGate->outputLine.rect.width,
             currentGate->outputLine.rect.height,
             BLUE);
+    }
+    else
+    {
+        DrawTexture(
+            *currentGate->outputLine.texture, currentGate->outputLine.rect.x, currentGate->outputLine.rect.y, WHITE);
+        DrawRectangleLines(
+            currentGate->outputLine.rect.x,
+            currentGate->outputLine.rect.y,
+            currentGate->outputLine.rect.width,
+            currentGate->outputLine.rect.height,
+            BLUE);
+    }
+
+    if (currentGate->leftChild)
+    {
+        DrawGateComplex((gate *)currentGate->leftChild, currentLevel + 1, maxLevel, 1);
+    }
+
+    if (currentGate->rightChild)
+    {
+        DrawGateComplex((gate *)currentGate->rightChild, currentLevel + 1, maxLevel, 1);
     }
 }
 
@@ -201,7 +256,7 @@ int main(void)
 
     gate gates[MAXGATECOUNT]; // = {{&gateTextures[0], 0}};
     image2D gateImg = {&gateTextures[0], 0};
-    image2D lineImg = {&lineTextures[4], 0};
+    image2D lineImg = {&lineTextures[7], 0};
 
     for (int i = 0; i < MAXGATECOUNT; i++)
     {
@@ -209,7 +264,12 @@ int main(void)
         gates[i]  = gate;
     }
 
-    gate rootGate = gates[0];
+    gate rootGate   = gates[0];
+    gate leftChild  = gates[1];
+    gate rightChild = gates[2];
+
+    rootGate.leftChild  = (struct gate *)&leftChild;
+    rootGate.rightChild = (struct gate *)&rightChild;
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 
@@ -275,7 +335,7 @@ int main(void)
             // }
         }
 
-        UpdateGateComplex(&rootGate, 1, gateTreeHeight, 1, screenWidth, screenHeight);
+        UpdateGateComplex(&rootGate, 1, gateTreeHeight, 1, screenWidth, screenHeight, 0);
 
         // Draw
         //----------------------------------------------------------------------------------
