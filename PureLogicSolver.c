@@ -35,6 +35,7 @@ typedef struct
     char level; // level in terms of how big the gate tree is.
     char place; // place within the level
     bool locked;
+    bool works;
     Picture line;
     Picture body;
 } Gate;
@@ -114,15 +115,20 @@ int main(void)
         Textures[i] = LoadTextureFromImage(img);
         UnloadImage(img);
     }
-    
+  
+    Texture2D* andGate = &Textures[0];
+    Texture2D* grayDown = &Textures[11];
+    Texture2D* grayUp = &Textures[8];
+    Texture2D* grayStraight = &Textures[21];
+    Texture2D* grayFork = &Textures[15];
+
     int centerX = ScreenWidth/2;
     int centerY = ScreenHeight/2;
-    char level = 1;
-    char place = 1;
+    char level = 0;
+    char place = 0;
+
     for (int i = 0; i < GATE_COUNT; i++) 
     {
-        Gate gate = {level, place, false, {{0, 0, 50, 50}, &Textures[15]}, {{0, 0, 100, 50} ,&Textures[0]}};
-        Gates[i] = gate;
         /* There are the same number of places as the level number 
            ----------------------------------
            7 | 6 | 5 | 4 | 3 | 2 | 1 | levels 
@@ -135,6 +141,8 @@ int main(void)
            6 | 6 | 
            7 |
            */
+        Picture line = {{0, 0, 50, 50}, grayFork};
+
         if(level != place)
         {
             place++;
@@ -144,6 +152,32 @@ int main(void)
             level++;
             place = 1;
         }
+
+        if(place == 1)
+        {
+            line.texture = grayDown;
+        }
+
+        if(level == place)
+        {
+            line.texture = grayUp;
+        }
+
+        if(level == 1 && place == 1)
+        {
+            line.texture = grayStraight ;
+        }
+
+        Gate gate = 
+        {
+            level, 
+            place, 
+            false, 
+            false, 
+            line,
+            {{0, 0, 100, 50}, andGate}  // gate
+        };
+        Gates[i] = gate;
     }
 
     Button saveEdit = {{ScreenWidth/2-50, 30, 100, 30}, "Save"};
@@ -263,16 +297,10 @@ int main(void)
             }
         }
 
-//         DrawLine(ScreenWidth/2, 0, ScreenWidth/2, ScreenHeight, DARKBLUE);
-//         DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
-        
         for (int i = 0; i < gateCount; i++) 
         {
-            DrawTexture(*Gates[i].body.texture, Gates[i].body.rect.x, Gates[i].body.rect.y, WHITE);
             DrawTexture(*Gates[i].line.texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
-
-//             DrawRectangleLines(Gates[i].line.rect.x, Gates[i].line.rect.y, Gates[i].line.rect.w, Gates[i].line.rect.h, GREEN);
-//             DrawRectangleLines(Gates[i].body.rect.x, Gates[i].body.rect.y, Gates[i].body.rect.w, Gates[i].body.rect.h, RED);
+            DrawTexture(*Gates[i].body.texture, Gates[i].body.rect.x, Gates[i].body.rect.y, WHITE);
         }
 
         EndDrawing();
