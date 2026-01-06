@@ -7,7 +7,7 @@
 #define FONT_SIZE 16
 
 const int ScreenWidth  = 800;
-const int ScreenHeight = 450;
+const int ScreenHeight = 500;
 
 typedef struct
 {
@@ -133,7 +133,10 @@ int main(void)
 
     bool isEditMode = true;
     char levels = 1;
-
+   
+    int centerX = ScreenWidth/2;
+    int centerY = ScreenHeight/2;
+    
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 
     // Main game loop
@@ -141,12 +144,6 @@ int main(void)
     {
         // Update
         //----------------------------------------------------------------------------------
-        if(CheckLeftClick(&saveEdit))
-        {
-            isEditMode = isEditMode == true ? false : true;
-            saveEdit.label = isEditMode ? "Save" : "Edit";
-        }
-
         if(CheckLeftClick(&decrementLevel))
         {
             levels = clampInclusive(--levels, 1, 6);
@@ -156,6 +153,28 @@ int main(void)
         {
             levels = clampInclusive(++levels, 1, 6);
         }
+
+        int totalGateWidth = levels * 100;
+
+        for (int i = 0; i < GATE_COUNT; i++) 
+        {
+            int totalLevelHeight = Gates[i].level * 50;
+
+            Gates[i].x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
+            Gates[i].y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) -50;
+
+            if(Gates[i].level == levels && Gates[i].place == Gates[i].level)
+            {
+                break;
+            }
+        }
+
+        if(CheckLeftClick(&saveEdit))
+        {
+            isEditMode = isEditMode == true ? false : true;
+            saveEdit.label = isEditMode ? "Save" : "Edit";
+        }
+
 
         if(isEditMode)
         {
@@ -174,7 +193,7 @@ int main(void)
         ClearBackground(BACKGROUNDBLUE);
 
         DrawButton(&saveEdit );
-
+        
         if(isEditMode)
         {
             DrawButton(&decrementLevel);
@@ -192,20 +211,20 @@ int main(void)
             }
         }
 
-        int startX = ((ScreenWidth/2) - 100) + ((levels * 100)/2); 
-        int startY = ((ScreenHeight/2) - 25);
-        for (int i = 0; i < levels; i++) 
+        DrawLine(ScreenWidth/2, 0, ScreenWidth/2, ScreenHeight, DARKBLUE);
+        DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
+        
+        for (int i = 0; i < GATE_COUNT; i++) 
         {
-            int adjustAllY = i * 25;
-            for (int j = 0; j <= i; j++)
+            DrawTexture(*Gates[i].body, Gates[i].x, Gates[i].y, WHITE);
+            DrawTexture(*Gates[i].line, Gates[i].x+75, Gates[i].y, WHITE);
+
+            DrawRectangleLines(Gates[i].x + 75, Gates[i].y, 50, 50, GREEN);
+            DrawRectangleLines(Gates[i].x, Gates[i].y, Gates[i].w, Gates[i].h, RED);
+            
+            if(Gates[i].level == levels && Gates[i].place == Gates[i].level)
             {
-                int newX = startX - (i * 100);
-                int newY = startY - adjustAllY + (j * 50);
-                int index = i + j;
-                Gates[index].x = newX;
-                Gates[index].y = newY;
-                DrawTexture(*Gates[index].body, Gates[index].x, Gates[index].y, WHITE);
-                //DrawTexture(*Gates[index].line, Gates[index].x + 75, Gates[index].y, WHITE);
+                break;
             }
         }
 
