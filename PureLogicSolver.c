@@ -1,175 +1,81 @@
 #include "raylib.h"
-#define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
-#define GATECOUNT 6
-#define LINECOUNT 15
-#define MAXGATECOUNT 21
+#include <stdbool.h>
 
-Texture2D gateTextures[GATECOUNT];
-Texture2D lineTextures[LINECOUNT];
+#define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
+#define TEXTURE_COUNT 22
+#define GATE_COUNT 28
+#define FONT_SIZE 16
+
+const int ScreenWidth  = 800;
+const int ScreenHeight = 450;
 
 typedef struct
 {
     int x;
     int y;
-    int width;
-    int height;
-} rect;
+    int w;
+    int h;
+    char* label;
+} Button;
 
 typedef struct
 {
-    Texture2D *texture;
-    rect rect;
-} image2D;
+    char level; // level in terms of how big the gate tree is.
+    char place; // place within the level
+    int x;
+    int y;
+    int w;
+    int h;
+    bool locked;
+    Texture2D* line;
+    Texture2D* body;
+} Gate;
 
-// TODO: Maybe make a struct for straight input lines for leftmost inputs
-typedef struct
+char* ImageFilenames[] = 
 {
-    image2D image;
+    "resources/gates/AND.png",
+    "resources/gates/NAND.png",
+    "resources/gates/NOR.png",
+    "resources/gates/OR.png",
+    "resources/gates/XNOR.png",
+    "resources/gates/XOR.png",
+    "resources/lines/up_white.png",
+    "resources/lines/up_black.png",
+    "resources/lines/up_gray.png",
+    "resources/lines/down_white.png",
+    "resources/lines/down_black.png",
+    "resources/lines/down_gray.png",
+    "resources/lines/fork_white.png",
+    "resources/lines/fork_black.png",
+    "resources/lines/fork_gray.png",
+    "resources/lines/fork_gray.png",
+    "resources/lines/dual_white.png",
+    "resources/lines/dual_black.png",
+    "resources/lines/dual_gray.png",
+    "resources/lines/straight_white.png",
+    "resources/lines/straight_black.png",
+    "resources/lines/straight_gray.png",
+};
 
-    struct gate *parent;
-    struct gate *leftChild;
-    struct gate *rightChild;
-
-    // NOTE: To check if the current gate's output line is valid, check its children's lines.
-    image2D outputLine;
-} gate;
-
-typedef struct
-{
-    rect rect;
-    char *text;
-} ButtonData;
-
-static void EditTreeBasedOnLevel(gate *currentGate, int targetLevel)
-{
-}
-
-static void CheckForGateComplexClick(gate *currentGate, int currentLevel, int maxLevel, int columnCount)
-{
-}
-
-static void UpdateGateComplex(
-    gate *currentGate, int currentLevel, int maxLevel, int columnCount, int screenWidth, int screenHeight, gate *parent)
-{
-    int totalWidth  = 100 * maxLevel;
-    int totalHeight = 50 * maxLevel;
-    int width       = 100;
-    int height      = 50;
-    int x           = ((screenWidth / 2) - 50) + (totalWidth - (currentLevel * 50));
-    int y           = ((screenHeight / 2) - 25) + (50 * (columnCount - 1));
-
-    currentGate->image.rect = (rect){x, y, width, height};
-
-    if (currentLevel == 1) // Root gate
-    {
-        rect *r                 = &currentGate->image.rect;
-        rect lineRect           = {r->x + (r->width / 2), r->y, 50, 50};
-        image2D img             = {&lineTextures[4], lineRect};
-        currentGate->outputLine = img;
-        currentGate->parent     = 0; // Root doesn't have a parent.
-    }
-    else
-    {
-        rect *r                 = &currentGate->image.rect;
-        rect lineRect           = {r->x + (r->width / 2), r->y, 50, 50};
-        image2D img             = {&lineTextures[7], lineRect};
-        currentGate->outputLine = img;
-        currentGate->parent     = (struct gate *)parent;
-    }
-
-    if (currentGate->leftChild)
-    {
-        UpdateGateComplex(
-            (gate *)currentGate->leftChild,
-            currentLevel + 1,
-            maxLevel,
-            columnCount + 1,
-            screenWidth,
-            screenHeight,
-            currentGate);
-    }
-
-    if (currentGate->rightChild)
-    {
-        UpdateGateComplex(
-            (gate *)currentGate->rightChild,
-            currentLevel + 1,
-            maxLevel,
-            columnCount + 2,
-            screenWidth,
-            screenHeight,
-            currentGate);
-    }
-
-    columnCount++;
-}
-
-static void DrawGateComplex(gate *currentGate, int currentLevel, int maxLevel, int columnCount)
-{
-    DrawTexture(*currentGate->image.texture, currentGate->image.rect.x, currentGate->image.rect.y, WHITE);
-    DrawRectangleLines(
-        currentGate->image.rect.x,
-        currentGate->image.rect.y,
-        currentGate->image.rect.width,
-        currentGate->image.rect.height,
-        RED);
-
-    if (currentLevel == 1) // Root gate
-    {
-        DrawTexture(
-            *currentGate->outputLine.texture, currentGate->outputLine.rect.x, currentGate->outputLine.rect.y, WHITE);
-        DrawRectangleLines(
-            currentGate->outputLine.rect.x,
-            currentGate->outputLine.rect.y,
-            currentGate->outputLine.rect.width,
-            currentGate->outputLine.rect.height,
-            BLUE);
-    }
-    else
-    {
-        DrawTexture(
-            *currentGate->outputLine.texture, currentGate->outputLine.rect.x, currentGate->outputLine.rect.y, WHITE);
-        DrawRectangleLines(
-            currentGate->outputLine.rect.x,
-            currentGate->outputLine.rect.y,
-            currentGate->outputLine.rect.width,
-            currentGate->outputLine.rect.height,
-            BLUE);
-    }
-
-    if (currentGate->leftChild)
-    {
-        DrawGateComplex((gate *)currentGate->leftChild, currentLevel + 1, maxLevel, 1);
-    }
-
-    if (currentGate->rightChild)
-    {
-        DrawGateComplex((gate *)currentGate->rightChild, currentLevel + 1, maxLevel, 1);
-    }
-}
+Texture2D Textures[TEXTURE_COUNT];
+Gate Gates[GATE_COUNT]; // TODO: These aren't just gates, give them a better name.
 
 static int clampInclusive(int value, int min, int max)
 {
     return value <= min ? min : value >= max ? max : value;
 }
 
-static int CheckLeftClick(rect rect)
+static void DrawButton(Button *button)
 {
-    Rectangle r = {(float)rect.x, (float)rect.y, (float)rect.width, (float)rect.height};
-    return (CheckCollisionPointRec(GetMousePosition(), r) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) == 1 ? 1 : 0;
+    DrawRectangle(button->x, button->y, button->w, button->h, LIGHTGRAY);
+    DrawRectangleLines(button->x, button->y, button->w, button->h, DARKGRAY);
+    DrawText(button->label, button->x + (button->w/3), button->y + (button->h/4), FONT_SIZE, BLACK);
 }
 
-static void DrawButton(ButtonData *buttonData)
+static bool CheckLeftClick(Button *button)
 {
-    DrawRectangle(buttonData->rect.x, buttonData->rect.y, buttonData->rect.width, buttonData->rect.height, LIGHTGRAY);
-    DrawRectangleLines(
-        buttonData->rect.x, buttonData->rect.y, buttonData->rect.width, buttonData->rect.height, DARKGRAY);
-    DrawText(
-        buttonData->text,
-        buttonData->rect.x + (buttonData->rect.width / 3),
-        buttonData->rect.y + (buttonData->rect.height / 4),
-        16,
-        BLACK);
+    Rectangle r = {(float)button->x,(float)button->y,(float)button->w,(float)button->h};
+    return CheckCollisionPointRec(GetMousePosition(), r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
 //------------------------------------------------------------------------------------
@@ -180,96 +86,53 @@ int main(void)
     // Initialization
     //--------------------------------------------------------------------------------------
 
-    const int screenWidth  = 800;
-    const int screenHeight = 450;
-    InitWindow(screenWidth, screenHeight, "Pure Logic Solver");
+    InitWindow(ScreenWidth, ScreenHeight, "Pure Logic Solver");
 
     // NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
 
-    // Images are 100 x 50 px
-    char *gateNames[GATECOUNT] = {
-        "resources/gates/AND.png",
-        "resources/gates/NAND.png",
-        "resources/gates/NOR.png",
-        "resources/gates/OR.png",
-        "resources/gates/XNOR.png",
-        "resources/gates/XOR.png"};
-
-    for (int i = 0; i < GATECOUNT; ++i)
+    for (int i = 0; i < TEXTURE_COUNT; i++) 
     {
-        Image img       = LoadImage(gateNames[i]);
-        gateTextures[i] = LoadTextureFromImage(img);
+        Image img = LoadImage(ImageFilenames[i]);
+        Textures[i] = LoadTextureFromImage(img);
         UnloadImage(img);
     }
 
-    char *lineNames[LINECOUNT] = {
-        "resources/lines/up_white.png",
-        "resources/lines/up_gray.png",
-        "resources/lines/up_black.png",
-
-        "resources/lines/straight_white.png",
-        "resources/lines/straight_gray.png",
-        "resources/lines/straight_black.png",
-
-        "resources/lines/fork_white.png",
-        "resources/lines/fork_gray.png",
-        "resources/lines/fork_black.png",
-
-        "resources/lines/dual_white.png",
-        "resources/lines/dual_gray.png",
-        "resources/lines/dual_black.png",
-
-        "resources/lines/down_white.png",
-        "resources/lines/down_gray.png",
-        "resources/lines/down_black.png",
-    };
-
-    for (int i = 0; i < LINECOUNT; i++)
+    char level = 1;
+    char place = 1;
+    for (int i = 0; i < GATE_COUNT; i++) 
     {
-        Image line      = LoadImage(lineNames[i]);
-        lineTextures[i] = LoadTextureFromImage(line);
-        UnloadImage(line);
+        Gate gate = {level, place, 0, 0, 100, 50, false, &Textures[15], &Textures[0]};
+        Gates[i] = gate;
+        /* There are the same number of places as the level number 
+           ----------------------------------
+           7 | 6 | 5 | 4 | 3 | 2 | 1 | levels 
+           ----------------------------------
+           1 | 1 | 1 | 1 | 1 | 1 | 1 | places
+           2 | 2 | 2 | 2 | 2 | 2 | 
+           3 | 3 | 3 | 3 | 3 | 
+           4 | 4 | 4 | 4 | 
+           5 | 5 | 5 | 
+           6 | 6 | 
+           7 |
+           */
+        if(level != place)
+        {
+            place++;
+        }
+        else if(level == place)
+        {
+            level++;
+            place = 1;
+        }
     }
 
-    Rectangle gateMenuRect = {((float)screenWidth / 2) - 300.0f, (float)screenHeight - 80.0f, 600.0f, 70.0f};
+    Button saveEdit = {ScreenWidth/2-50, 30, 100, 30, "Save"};
+    Button decrementLevel = {saveEdit.x + 110, 30, 50, 30, "-"};
+    Button incrementLevel = {decrementLevel.x + 110, 30, 50, 30, "+"};
+    Rectangle gateMenu = {((float)ScreenWidth/2) - 300.0f, ((float)ScreenHeight) - 80.0f, 600.0f, 70.0f};
 
-    image2D gateMenuItems[GATECOUNT];
-
-    for (int i = 0; i < GATECOUNT; i++)
-    {
-        image2D menuGate = {
-            &gateTextures[i], {(gateMenuRect.x + (i * 100.0f)), (gateMenuRect.y + 10.0f), 100.0f, 50.0f}};
-        gateMenuItems[i] = menuGate;
-    }
-
-    int selectedGateIndex = -1;
-    int IsEditMode        = 1;
-    char gateTreeHeight   = 1;
-
-    ButtonData saveEditButton = {{screenWidth / 2 - 50, screenHeight - (screenHeight - 20), 100, 30}, "Edit"};
-
-    ButtonData decrementLevelsButton = {
-        {saveEditButton.rect.x + 110, screenHeight - (screenHeight - 20), 50, 30}, " -"};
-
-    ButtonData incrementLevelsButton = {
-        {decrementLevelsButton.rect.x + 110, screenHeight - (screenHeight - 20), 50, 30}, " +"};
-
-    gate gates[MAXGATECOUNT]; // = {{&gateTextures[0], 0}};
-    image2D gateImg = {&gateTextures[0], 0};
-    image2D lineImg = {&lineTextures[7], 0};
-
-    for (int i = 0; i < MAXGATECOUNT; i++)
-    {
-        gate gate = {gateImg, 0, 0, 0, lineImg};
-        gates[i]  = gate;
-    }
-
-    gate rootGate   = gates[0];
-    gate leftChild  = gates[1];
-    gate rightChild = gates[2];
-
-    rootGate.leftChild  = (struct gate *)&leftChild;
-    rootGate.rightChild = (struct gate *)&rightChild;
+    bool isEditMode = true;
+    char levels = 1;
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 
@@ -278,130 +141,84 @@ int main(void)
     {
         // Update
         //----------------------------------------------------------------------------------
-
-        // Set positions gates should draw at.
-        int startingX = (screenWidth / 2) - (50 * gateTreeHeight);
-        for (int i = 0; i < GATECOUNT; ++i)
+        if(CheckLeftClick(&saveEdit))
         {
-            gates[i].image.rect = (rect){startingX + (i * 100), (screenHeight / 2) - 25, 100, 50};
+            isEditMode = isEditMode == true ? false : true;
+            saveEdit.label = isEditMode ? "Save" : "Edit";
         }
 
-        if (CheckLeftClick(saveEditButton.rect))
+        if(CheckLeftClick(&decrementLevel))
         {
-            IsEditMode = IsEditMode ? 0 : 1;
+            levels = clampInclusive(--levels, 1, 6);
         }
 
-        if (IsEditMode)
+        if(CheckLeftClick(&incrementLevel))
         {
-            // Handle click for Increment and Decrement levels
-            if (CheckLeftClick(incrementLevelsButton.rect))
-            {
-                int old        = gateTreeHeight;
-                gateTreeHeight = clampInclusive(++gateTreeHeight, 1, 6);
-                if (old != 6)
-                {
-                    gates[gateTreeHeight - 1].image.texture = &gateTextures[0];
-                }
-            }
-
-            if (CheckLeftClick(decrementLevelsButton.rect))
-            {
-                gateTreeHeight = clampInclusive(--gateTreeHeight, 1, 6);
-            }
-
-            // handles click for gate menu items.
-            for (int i = 0; i < GATECOUNT; i++)
-            {
-
-                if (CheckLeftClick(gateMenuItems[i].rect))
-                {
-                    if (selectedGateIndex != -1)
-                    {
-                        gates[selectedGateIndex].image.texture = gateMenuItems[i].texture;
-                        selectedGateIndex                      = -1;
-                    }
-                    break;
-                }
-            }
-
-            // handle click for selecting a gate
-            // for (int i = 0; i < gateTreeHeight; ++i)
-            // {
-            //     if (CheckLeftClick(gates[i].image.rect))
-            //     {
-            //         selectedGateIndex = i;
-            //         break;
-            //     }
-            // }
+            levels = clampInclusive(++levels, 1, 6);
         }
 
-        UpdateGateComplex(&rootGate, 1, gateTreeHeight, 1, screenWidth, screenHeight, 0);
+        if(isEditMode)
+        {
+            // TODO: Check for gate clicks, show gate menu when one is clicked.
+        }
+        else
+        {
+            // TODO: Check for line clicks and cycle through colour when one is found.
+            // TODO: Toggle success/failure based on inputs vs. output.
+        }
 
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
+
         ClearBackground(BACKGROUNDBLUE);
 
-        if (IsEditMode)
-        {
-            saveEditButton.text = "Save";
+        DrawButton(&saveEdit );
 
-            // Gate menu
-            if (selectedGateIndex != -1) // Only show gate menu when a gate is selected.
+        if(isEditMode)
+        {
+            DrawButton(&decrementLevel);
+            char levelsText[2] = {(char)(levels+48),'\0'}; // Converts number to ascii char*
+            DrawText(levelsText, decrementLevel.x + 75, 35, FONT_SIZE, BLACK);
+            DrawButton(&incrementLevel);
+
+            // TODO: Only show this menu when a gate is selected. 
+            // It is intended to be where you select which gate should be displayed.
+            DrawRectangle((int)gateMenu.x, (int)gateMenu.y, (int)gateMenu.width, (int)gateMenu.height, LIGHTGRAY);
+            DrawRectangleLines((int)gateMenu.x, (int)gateMenu.y, (int)gateMenu.width, (int)gateMenu.height, DARKGRAY);
+            for (int i = 0; i < 6; i++) 
             {
-                DrawRectangle(gateMenuRect.x, gateMenuRect.y, gateMenuRect.width, gateMenuRect.height, RAYWHITE);
-                for (int i = 0; i < GATECOUNT; ++i)
-                {
-                    DrawTexture(*gateMenuItems[i].texture, gateMenuRect.x + (i * 100), gateMenuRect.y + 10, WHITE);
-                }
+                DrawTexture(Textures[i], (int)gateMenu.x + (i * 100), (int)gateMenu.y + 10, WHITE);
             }
-
-            // Decrement levels button
-            DrawButton(&decrementLevelsButton);
-
-            // Levels count
-            char levelText[2] = {(char)(gateTreeHeight + 48), '\0'}; // convert int to string
-            DrawText(
-                levelText,
-                (decrementLevelsButton.rect.x + 50 + (decrementLevelsButton.rect.width / 2)),
-                (decrementLevelsButton.rect.y + (decrementLevelsButton.rect.height / 4)),
-                16,
-                BLACK);
-
-            // Increment levels button
-            DrawButton(&incrementLevelsButton);
         }
-        else
+
+        int startX = ((ScreenWidth/2) - 100) + ((levels * 100)/2); 
+        int startY = ((ScreenHeight/2) - 25);
+        for (int i = 0; i < levels; i++) 
         {
-            saveEditButton.text = "Edit";
+            int adjustAllY = i * 25;
+            for (int j = 0; j <= i; j++)
+            {
+                int newX = startX - (i * 100);
+                int newY = startY - adjustAllY + (j * 50);
+                int index = i + j;
+                Gates[index].x = newX;
+                Gates[index].y = newY;
+                DrawTexture(*Gates[index].body, Gates[index].x, Gates[index].y, WHITE);
+                //DrawTexture(*Gates[index].line, Gates[index].x + 75, Gates[index].y, WHITE);
+            }
         }
-
-        // Gates at screen center.
-        // for (int i = 0; i < gateTreeHeight; ++i)
-        // {
-        //     DrawTexture(*gates[i].image.texture, gates[i].image.rect.x, gates[i].image.rect.y, WHITE);
-        // }
-        //
-        DrawGateComplex(&rootGate, 1, gateTreeHeight, 1);
-
-        // Save/Edit button
-        DrawButton(&saveEditButton);
 
         EndDrawing();
-        //----------------------------------------------------------------------------------
+        //---------------------------------------------------------------------------------
     }
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
 
-    for (int i = 0; i < GATECOUNT; ++i)
+    for (int i = 0; i<GATE_COUNT; i++) 
     {
-        UnloadTexture(gateTextures[i]);
-    }
-
-    for (int i = 0; i < LINECOUNT; ++i)
-    {
-        UnloadTexture(lineTextures[i]);
+        UnloadTexture(Textures[i]);
     }
 
     CloseWindow(); // Close window and OpenGL context
