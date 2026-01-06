@@ -15,6 +15,11 @@ typedef struct
     int y;
     int w;
     int h;
+} MyRect;
+
+typedef struct
+{
+    MyRect rect;
     char* label;
 } Button;
 
@@ -22,10 +27,7 @@ typedef struct
 {
     char level; // level in terms of how big the gate tree is.
     char place; // place within the level
-    int x;
-    int y;
-    int w;
-    int h;
+    MyRect rect;
     bool locked;
     Texture2D* line;
     Texture2D* body;
@@ -67,14 +69,14 @@ static int clampInclusive(int value, int min, int max)
 
 static void DrawButton(Button *button)
 {
-    DrawRectangle(button->x, button->y, button->w, button->h, LIGHTGRAY);
-    DrawRectangleLines(button->x, button->y, button->w, button->h, DARKGRAY);
-    DrawText(button->label, button->x + (button->w/3), button->y + (button->h/4), FONT_SIZE, BLACK);
+    DrawRectangle(button->rect.x, button->rect.y, button->rect.w, button->rect.h, LIGHTGRAY);
+    DrawRectangleLines(button->rect.x, button->rect.y, button->rect.w, button->rect.h, DARKGRAY);
+    DrawText(button->label, button->rect.x + (button->rect.w/3), button->rect.y + (button->rect.h/4), FONT_SIZE, BLACK);
 }
 
 static bool CheckLeftClick(Button *button)
 {
-    Rectangle r = {(float)button->x,(float)button->y,(float)button->w,(float)button->h};
+    Rectangle r = {(float)button->rect.x,(float)button->rect.y,(float)button->rect.w,(float)button->rect.h};
     return CheckCollisionPointRec(GetMousePosition(), r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
@@ -101,7 +103,7 @@ int main(void)
     char place = 1;
     for (int i = 0; i < GATE_COUNT; i++) 
     {
-        Gate gate = {level, place, 0, 0, 100, 50, false, &Textures[15], &Textures[0]};
+        Gate gate = {level, place, {0, 0, 100, 50}, false, &Textures[15], &Textures[0]};
         Gates[i] = gate;
         /* There are the same number of places as the level number 
            ----------------------------------
@@ -126,10 +128,10 @@ int main(void)
         }
     }
 
-    Button saveEdit = {ScreenWidth/2-50, 30, 100, 30, "Save"};
-    Button decrementLevel = {saveEdit.x + 110, 30, 50, 30, "-"};
-    Button incrementLevel = {decrementLevel.x + 110, 30, 50, 30, "+"};
-    Rectangle gateMenu = {((float)ScreenWidth/2) - 300.0f, ((float)ScreenHeight) - 80.0f, 600.0f, 70.0f};
+    Button saveEdit = {{ScreenWidth/2-50, 30, 100, 30}, "Save"};
+    Button decrementLevel = {{saveEdit.rect.x + 110, 30, 50, 30}, "-"};
+    Button incrementLevel = {{decrementLevel.rect.x + 110, 30, 50, 30}, "+"};
+    MyRect gateMenu = {(ScreenWidth/2) - 300, (ScreenHeight) - 80, 600, 70};
 
     bool isEditMode = true;
     char levels = 1;
@@ -160,8 +162,8 @@ int main(void)
         {
             int totalLevelHeight = Gates[i].level * 50;
 
-            Gates[i].x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
-            Gates[i].y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) -50;
+            Gates[i].rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
+            Gates[i].rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) -50;
 
             if(Gates[i].level == levels && Gates[i].place == Gates[i].level)
             {
@@ -198,16 +200,16 @@ int main(void)
         {
             DrawButton(&decrementLevel);
             char levelsText[2] = {(char)(levels+48),'\0'}; // Converts number to ascii char*
-            DrawText(levelsText, decrementLevel.x + 75, 35, FONT_SIZE, BLACK);
+            DrawText(levelsText, decrementLevel.rect.x + 75, 35, FONT_SIZE, BLACK);
             DrawButton(&incrementLevel);
 
             // TODO: Only show this menu when a gate is selected. 
             // It is intended to be where you select which gate should be displayed.
-            DrawRectangle((int)gateMenu.x, (int)gateMenu.y, (int)gateMenu.width, (int)gateMenu.height, LIGHTGRAY);
-            DrawRectangleLines((int)gateMenu.x, (int)gateMenu.y, (int)gateMenu.width, (int)gateMenu.height, DARKGRAY);
+            DrawRectangle(gateMenu.x, gateMenu.y, gateMenu.w, gateMenu.h, LIGHTGRAY);
+            DrawRectangleLines(gateMenu.x, gateMenu.y, gateMenu.w, gateMenu.h, DARKGRAY);
             for (int i = 0; i < 6; i++) 
             {
-                DrawTexture(Textures[i], (int)gateMenu.x + (i * 100), (int)gateMenu.y + 10, WHITE);
+                DrawTexture(Textures[i], gateMenu.x + (i * 100), gateMenu.y + 10, WHITE);
             }
         }
 
@@ -216,11 +218,11 @@ int main(void)
         
         for (int i = 0; i < GATE_COUNT; i++) 
         {
-            DrawTexture(*Gates[i].body, Gates[i].x, Gates[i].y, WHITE);
-            DrawTexture(*Gates[i].line, Gates[i].x+75, Gates[i].y, WHITE);
+            DrawTexture(*Gates[i].body, Gates[i].rect.x, Gates[i].rect.y, WHITE);
+            DrawTexture(*Gates[i].line, Gates[i].rect.x+75, Gates[i].rect.y, WHITE);
 
-            DrawRectangleLines(Gates[i].x + 75, Gates[i].y, 50, 50, GREEN);
-            DrawRectangleLines(Gates[i].x, Gates[i].y, Gates[i].w, Gates[i].h, RED);
+            DrawRectangleLines(Gates[i].rect.x + 75, Gates[i].rect.y, 50, 50, GREEN);
+            DrawRectangleLines(Gates[i].rect.x, Gates[i].rect.y, Gates[i].rect.w, Gates[i].rect.h, RED);
             
             if(Gates[i].level == levels && Gates[i].place == Gates[i].level)
             {
