@@ -145,6 +145,18 @@ static void CheckLineClick(GateComplex* gate, Texture2D* gray_, Texture2D* white
     }
 }
 
+static GateComplex* GetGateComplex(int level, int place)
+{
+    for (int i = 0; i < GATE_COUNT; i++) 
+    {
+        if(Gates[i].level == level && Gates[i].place == place)
+        {
+            return &Gates[i];
+        }
+    }
+    return 0;
+}
+
 static void ValidateGates(int numberOfGates)
 {
     for(int i = 0; i < numberOfGates; i++)
@@ -156,31 +168,38 @@ static void ValidateGates(int numberOfGates)
 
         int level = Gates[i].level;
         int place = Gates[i].place;
-        int levelDownIndexA = NumberOfGates(level + 1) - ((level + 1) - (place == 1 ? 1 : place -1)) -1;
-        int levelDownIndexB = NumberOfGates(level + 1) - ((level + 1) - (place + 1)) -1;
-        inA = Gates[levelDownIndexA].line.color == white;
-        inB = Gates[levelDownIndexB].line.color == white;
+        GateComplex* A = GetGateComplex(level + 1, place);
+        GateComplex* B = GetGateComplex(level + 1, place + 1);
+
+        if(A->line.color == gray || B->line.color == gray || Gates[i].line.color == gray)
+        {
+            Gates[i].gate.works = false;
+            return;
+        }
+
+        inA = A->line.color == white;
+        inB = B->line.color == white;
         out = Gates[i].line.color == white;
-        // FIXME: This should return bool if the output is correct. Currently it tests if output line is on or off.
+
         switch (Gates[i].gate.type) {
             case AND:
                 if(inA && inB)                        result = true;
-                else if(inA || inB)                   result = false;
+                else if((inA || inB) && (inB || inA)) result = false;
                 else if(inA == false && inB == false) result = false;
                 break; 
             case NAND:
                 if(inA && inB)                        result = false;
-                else if(inA || inB)                   result = true;
+                else if((inA || inB) && (inB || inA)) result = true;
                 else if(inA == false && inB == false) result = true;
                 break; 
             case OR:
                 if(inA && inB)                        result = true;
-                else if(inA || inB)                   result = true;
+                else if((inA || inB) && (inB || inA)) result = true;
                 else if(inA == false && inB == false) result = false;
                 break; 
             case NOR:
                 if(inA && inB)                        result = false;
-                else if(inA || inB)                   result = false;
+                else if((inA || inB) && (inB || inA)) result = false;
                 else if(inA == false && inB == false) result = true;
                 break; 
             case XOR:
@@ -190,11 +209,11 @@ static void ValidateGates(int numberOfGates)
                 break; 
             case XNOR:
                 if(inA && inB)                        result = true;
-                else if(inA || inB)                   result = false;
-                else if(inA == false && inB == false) result = false;
+                else if((inA || inB) && (inB || inA)) result = false;
+                else if(inA == false && inB == false) result = true;
                 break;
         }
-        Gates[i].gate.works = out && result;
+        Gates[i].gate.works = out == result;
     }
 }
 
@@ -420,6 +439,8 @@ int main(void)
                     Gates[i].line.locked = false; // CheckLineClick sets locked so set it back.
                 }
             }
+            
+            ValidateGates(gateCount);
 
             if(CheckLeftClick(&resetLines.rect))
             {
@@ -444,6 +465,9 @@ int main(void)
                             Gates[i].line.texture = grayFork;
                         }
                     }
+
+                    Gates[i].line.color = gray;
+                    Gates[i].gate.works = false;
                 }
             }
         }
@@ -479,7 +503,6 @@ int main(void)
         }
         else
         {
-            ValidateGates(gateCount);
             DrawButton(&resetLines);
         }
 
