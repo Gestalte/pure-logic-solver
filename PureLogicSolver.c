@@ -3,12 +3,29 @@
 #include <stdio.h>
 
 #define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
-#define TEXTURE_COUNT 22
+#define TEXTURE_COUNT 21
 #define GATE_COUNT 28
 #define FONT_SIZE 16
 
 const int ScreenWidth  = 800;
 const int ScreenHeight = 500;
+
+enum GateName
+{
+    AND,
+    NAND,
+    OR,
+    NOR,
+    XOR,
+    XNOR
+};
+
+enum LineState
+{
+    black,
+    white,
+    gray
+};
 
 typedef struct
 {
@@ -26,48 +43,55 @@ typedef struct
 
 typedef struct
 {
+    enum LineState color;
+    bool locked;
     MyRect rect;
     Texture2D* texture;
-} Picture;
+} Line;
+
+typedef struct
+{
+    enum GateName type;
+    bool works;
+    MyRect rect;
+    Texture2D* texture;
+} Gate;
 
 typedef struct
 {
     char level; // level in terms of how big the gate tree is.
     char place; // place within the level
-    bool locked;
-    bool works;
-    Picture line;
-    Picture body;
-} Gate;
+    Line line;
+    Gate gate;
+} GateComplex;
 
 char* ImageFilenames[] = 
 {
     "resources/gates/AND.png",
     "resources/gates/NAND.png",
-    "resources/gates/NOR.png",
     "resources/gates/OR.png",
-    "resources/gates/XNOR.png",
+    "resources/gates/NOR.png",
     "resources/gates/XOR.png",
+    "resources/gates/XNOR.png",
     "resources/lines/up_white.png",
-    "resources/lines/up_black.png",
-    "resources/lines/up_gray.png",
     "resources/lines/down_white.png",
-    "resources/lines/down_black.png",
-    "resources/lines/down_gray.png",
     "resources/lines/fork_white.png",
-    "resources/lines/fork_black.png",
-    "resources/lines/fork_gray.png",
-    "resources/lines/fork_gray.png",
     "resources/lines/dual_white.png",
-    "resources/lines/dual_black.png",
-    "resources/lines/dual_gray.png",
     "resources/lines/straight_white.png",
+    "resources/lines/up_black.png",
+    "resources/lines/down_black.png",
+    "resources/lines/fork_black.png",
+    "resources/lines/dual_black.png",
     "resources/lines/straight_black.png",
+    "resources/lines/up_gray.png",
+    "resources/lines/down_gray.png",
+    "resources/lines/fork_gray.png",
+    "resources/lines/dual_gray.png",
     "resources/lines/straight_gray.png",
 };
 
 Texture2D Textures[TEXTURE_COUNT];
-Gate Gates[GATE_COUNT]; // TODO: These aren't just gates, give them a better name.
+GateComplex Gates[GATE_COUNT]; // TODO: These aren't just gates, give them a better name.
 
 static int clampInclusive(int value, int min, int max)
 {
@@ -83,6 +107,7 @@ static void DrawButton(Button *button)
 
 static bool CheckLeftClick(MyRect* rect)
 {
+
     Rectangle r = {(float)rect->x,(float)rect->y,(float)rect->w,(float)rect->h};
     return CheckCollisionPointRec(GetMousePosition(), r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
@@ -97,22 +122,79 @@ static int NumberOfGates(int level)
     return count;
 }
 
-static void CheckLineClick(Gate* gate, Texture2D* gray, Texture2D* white, Texture2D* black)
+// TODO: Maybe rewrite to use enums instead?
+static void CheckLineClick(GateComplex* gate, Texture2D* gray_, Texture2D* white_, Texture2D* black_)
 {
-    if(gate->line.texture == gray)
+    if(gate->line.texture == gray_)
     {
-       gate->line.texture = white;
-       gate->locked = true;
+       gate->line.texture = white_;
+       gate->line.locked = true;
+       gate->line.color = white;
     }
-    else if(gate->line.texture == white)
+    else if(gate->line.texture == white_)
     {
-        gate->line.texture = black;
-        gate->locked = true;
+        gate->line.texture = black_;
+        gate->line.locked = true;
+        gate->line.color = black;
     }
-    else if(gate->line.texture == black)
+    else if(gate->line.texture == black_)
     {
-        gate->line.texture = gray;
-        gate->locked = false;
+        gate->line.texture = gray_;
+        gate->line.locked = false;
+        gate->line.color = gray;
+    }
+}
+
+static void ValidateGates(int numberOfGates)
+{
+    for(int i = 0; i < numberOfGates; i++)
+    {
+        bool result = false;
+        bool inA = false;
+        bool inB = false;
+        bool out = false;
+
+        int level = Gates[i].level;
+        int place = Gates[i].place;
+        int levelDownIndexA = NumberOfGates(level + 1) - ((level + 1) - (place == 1 ? 1 : place -1)) -1;
+        int levelDownIndexB = NumberOfGates(level + 1) - ((level + 1) - (place + 1)) -1;
+        inA = Gates[levelDownIndexA].line.color == white;
+        inB = Gates[levelDownIndexB].line.color == white;
+        out = Gates[i].line.color == white;
+        // FIXME: This should return bool if the output is correct. Currently it tests if output line is on or off.
+        switch (Gates[i].gate.type) {
+            case AND:
+                if(inA && inB)                        result = true;
+                else if(inA || inB)                   result = false;
+                else if(inA == false && inB == false) result = false;
+                break; 
+            case NAND:
+                if(inA && inB)                        result = false;
+                else if(inA || inB)                   result = true;
+                else if(inA == false && inB == false) result = true;
+                break; 
+            case OR:
+                if(inA && inB)                        result = true;
+                else if(inA || inB)                   result = true;
+                else if(inA == false && inB == false) result = false;
+                break; 
+            case NOR:
+                if(inA && inB)                        result = false;
+                else if(inA || inB)                   result = false;
+                else if(inA == false && inB == false) result = true;
+                break; 
+            case XOR:
+                if(inA && inB)                        result = false;
+                else if(inA || inB)                   result = true;
+                else if(inA == false && inB == false) result = false;
+                break; 
+            case XNOR:
+                if(inA && inB)                        result = true;
+                else if(inA || inB)                   result = false;
+                else if(inA == false && inB == false) result = false;
+                break;
+        }
+        Gates[i].gate.works = out && result;
     }
 }
 
@@ -137,28 +219,29 @@ int main(void)
   
     Texture2D* andGate = &Textures[0];
 
-    Texture2D* grayDown = &Textures[11];
-    Texture2D* grayUp = &Textures[8];
-    Texture2D* grayStraight = &Textures[21];
-    Texture2D* grayFork = &Textures[15];
-    Texture2D* grayDual = &Textures[18];
+    Texture2D* grayStraight  = &Textures[20];
+    Texture2D* grayDual      = &Textures[19];
+    Texture2D* grayFork      = &Textures[18];
+    Texture2D* grayDown      = &Textures[17];
+    Texture2D* grayUp        = &Textures[16];
 
-    Texture2D* whiteDown = &Textures[9];
-    Texture2D* whiteUp = &Textures[6];
-    Texture2D* whiteStraight = &Textures[19];
-    Texture2D* whiteFork = &Textures[12];
-    Texture2D* whiteDual = &Textures[16];
-
-    Texture2D* blackDown = &Textures[10];
-    Texture2D* blackUp = &Textures[7];
-    Texture2D* blackStraight = &Textures[20];
-    Texture2D* blackFork = &Textures[13];
-    Texture2D* blackDual = &Textures[17];
-
+    Texture2D* blackStraight = &Textures[15];
+    Texture2D* blackDual     = &Textures[14];
+    Texture2D* blackFork     = &Textures[13];
+    Texture2D* blackDown     = &Textures[12];
+    Texture2D* blackUp       = &Textures[11];
+    
+    Texture2D* whiteStraight = &Textures[10];
+    Texture2D* whiteDual     = &Textures[9];
+    Texture2D* whiteFork     = &Textures[8];
+    Texture2D* whiteDown     = &Textures[7];
+    Texture2D* whiteUp       = &Textures[6];
+   
     int centerX = ScreenWidth/2;
     int centerY = ScreenHeight/2;
     char level = 0;
     char place = 0;
+    
 
     for (int i = 0; i < GATE_COUNT; i++) 
     {
@@ -174,7 +257,7 @@ int main(void)
            6 | 6 | 
            7 |
            */
-        Picture line = {{0, 0, 50, 50}, grayFork};
+        Line line = {gray, false, {0, 0, 50, 50}, grayFork};
 
         if(level != place)
         {
@@ -198,19 +281,13 @@ int main(void)
 
         if(level == 1 && place == 1)
         {
-            line.texture = grayStraight ;
+            line.texture = grayStraight;
         }
+        
+        Gate gate = {AND, false, {0, 0, 100, 50}, andGate}; 
 
-        Gate gate = 
-        {
-            level, 
-            place, 
-            false, 
-            false, 
-            line,
-            {{0, 0, 100, 50}, andGate}  // gate
-        };
-        Gates[i] = gate;
+        GateComplex gateComplex = {level, place, line , gate };
+        Gates[i] = gateComplex;
     }
 
     Button saveEdit = {{ScreenWidth/2-50, 30, 100, 30}, "Save"};
@@ -221,7 +298,7 @@ int main(void)
 
     bool isEditMode = true;
     char levels = 1;
-    Gate* selectedGate = 0;
+    GateComplex* selectedGate = 0;
         
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 
@@ -247,13 +324,13 @@ int main(void)
 
         for (int i = 0; i < gateCount; i++) 
         {
-            int totalLevelHeight = Gates[i].level * 50;
+            int totalLevelHeight = (Gates[i].level * 50);
 
-            Gates[i].body.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
-            Gates[i].body.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) -50;
+            Gates[i].gate.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
+            Gates[i].gate.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) - 50;
 
             Gates[i].line.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level) + 75;
-            Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) -50;
+            Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) - 50;
         }
 
         if(CheckLeftClick(&saveEdit.rect))
@@ -266,7 +343,7 @@ int main(void)
         {
             for (int i = 0; i < gateCount ; i++) 
             {
-                if(CheckLeftClick(&Gates[i].body.rect))
+                if(CheckLeftClick(&Gates[i].gate.rect))
                 {
                     selectedGate = &Gates[i];
                     printf("selectedGate: %d-%d\n", Gates[i].level, Gates[i].place);
@@ -288,7 +365,27 @@ int main(void)
                     MyRect rect = {gateMenu.x + (i * 100), gateMenu.y + 10, 100,50};
                     if(CheckLeftClick(&rect))
                     {
-                        selectedGate->body.texture = &Textures[i];
+                        selectedGate->gate.texture = &Textures[i];
+                        switch (i) {
+                        case 0: 
+                            selectedGate->gate.type = AND;
+                            break;
+                        case 1:
+                            selectedGate->gate.type = NAND;
+                            break;
+                        case 2:
+                            selectedGate->gate.type = OR;
+                            break;
+                        case 3:
+                            selectedGate->gate.type = NOR;
+                            break;
+                        case 4:
+                            selectedGate->gate.type = XOR;
+                            break;
+                        case 5:
+                            selectedGate->gate.type = XNOR;
+                            break;
+                        }
                         selectedGate = 0;
                         break;
                     }
@@ -313,14 +410,14 @@ int main(void)
             // Check for line changes
             for (int i = 0; i < gateCount; i++)
             {
-                if(CheckLeftClick(&Gates[i].line.rect) && Gates[i].locked == false)
+                if(CheckLeftClick(&Gates[i].line.rect) && Gates[i].line.locked == false)
                 {
                     CheckLineClick(&Gates[i], grayFork, whiteFork, blackFork);
                     CheckLineClick(&Gates[i], grayUp, whiteUp, blackUp);
                     CheckLineClick(&Gates[i], grayDown, whiteDown, blackDown);
                     CheckLineClick(&Gates[i], grayStraight, whiteStraight, blackStraight);
                     CheckLineClick(&Gates[i], grayDual, whiteDual, blackDual);                
-                    Gates[i].locked = false; // CheckLineClick sets locked so set it back.
+                    Gates[i].line.locked = false; // CheckLineClick sets locked so set it back.
                 }
             }
 
@@ -328,7 +425,7 @@ int main(void)
             {
                 for (int i = 0; i < GATE_COUNT; i++) 
                 {
-                    if(Gates[i].locked == false)
+                    if(Gates[i].line.locked == false)
                     {
                         if(Gates[i].level == Gates[i].place && Gates[i].level != 1)
                         {
@@ -370,7 +467,7 @@ int main(void)
             // Draw gate type selection menu
             if(selectedGate != 0)
             {
-                DrawRectangle(selectedGate->body.rect.x, selectedGate->body.rect.y, selectedGate->body.rect.w, selectedGate->body.rect.h, GREEN);
+                DrawRectangle(selectedGate->gate.rect.x, selectedGate->gate.rect.y, selectedGate->gate.rect.w, selectedGate->gate.rect.h, GREEN);
 
                 DrawRectangle(gateMenu.x, gateMenu.y, gateMenu.w, gateMenu.h, LIGHTGRAY);
                 DrawRectangleLines(gateMenu.x, gateMenu.y, gateMenu.w, gateMenu.h, DARKGRAY);
@@ -382,14 +479,25 @@ int main(void)
         }
         else
         {
+            ValidateGates(gateCount);
             DrawButton(&resetLines);
         }
 
         for (int i = 0; i < gateCount; i++) 
         {
+            if(Gates[i].gate.works)
+            {
+                DrawRectangle(Gates[i].gate.rect.x, Gates[i].gate.rect.y, Gates[i].gate.rect.w, Gates[i].gate.rect.h, GREEN);
+            }
             DrawTexture(*Gates[i].line.texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
-            DrawTexture(*Gates[i].body.texture, Gates[i].body.rect.x, Gates[i].body.rect.y, WHITE);
+            //DrawRectangleLines(Gates[i].line.rect.x, Gates[i].line.rect.y, Gates[i].line.rect.w, Gates[i].line.rect.h, GREEN);
+            DrawTexture(*Gates[i].gate.texture, Gates[i].gate.rect.x, Gates[i].gate.rect.y, WHITE);
+            //DrawRectangleLines(Gates[i].body.rect.x, Gates[i].body.rect.y, Gates[i].body.rect.w, Gates[i].body.rect.h, RED);
+            
+            DrawRectangleLines(Gates[i].gate.rect.x + 20, Gates[i].gate.rect.y, 60, Gates[i].gate.rect.h, BLUE);
         }
+
+        DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
 
         EndDrawing();
         //---------------------------------------------------------------------------------
