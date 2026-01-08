@@ -183,34 +183,34 @@ static void ValidateGates(int numberOfGates)
 
         switch (Gates[i].gate.type) {
             case AND:
-                if(inA && inB)                        result = true;
-                else if(inA | inB) result = false;
-                else if(inA == false && inB == false) result = false;
+                if(inA && inB)          result = true;
+                else if(inA | inB)      result = false;
+                else if(!inA && !inB)   result = false;
                 break; 
             case NAND:
-                if(inA && inB)                        result = false;
-                else if(inA | inB) result = true;
-                else if(inA == false && inB == false) result = true;
+                if(inA && inB)          result = false;
+                else if(inA | inB)      result = true;
+                else if(!inA && !inB)   result = true;
                 break; 
             case OR:
-                if(inA && inB)                        result = true;
-                else if(inA | inB) result = true;
-                else if(inA == false && inB == false) result = false;
+                if(inA && inB)          result = true;
+                else if(inA | inB)      result = true;
+                else if(!inA && !inB)   result = false;
                 break; 
             case NOR:
-                if(inA && inB)                        result = false;
-                else if(inA | inB) result = false;
-                else if(inA == false && inB == false) result = true;
+                if(inA && inB)          result = false;
+                else if(inA | inB)      result = false;
+                else if(!inA && !inB)   result = true;
                 break; 
             case XOR:
-                if(inA && inB)                        result = false;
-                else if(inA | inB)                    result = true;
-                else if(inA == false && inB == false) result = false;
+                if(inA && inB)          result = false;
+                else if(inA | inB)      result = true;
+                else if(!inA && !inB)   result = false;
                 break; 
             case XNOR:
-                if(inA && inB)                        result = true;
-                else if(inA | inB) result = false;
-                else if(inA == false && inB == false) result = true;
+                if(inA && inB)          result = true;
+                else if(inA | inB)      result = false;
+                else if(!inA && !inB)   result = true;
                 break;
         }
         Gates[i].gate.works = out == result;
