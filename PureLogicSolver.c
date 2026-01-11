@@ -365,7 +365,7 @@ int main(void)
         int drawCount = NumberOfGates(levels + 1);
         for (int i = 0; i < drawCount; i++) 
         {
-            int totalLevelHeight = (Gates[i].level * 50);
+            int totalLevelHeight = (Gates[i].level * 60);
 
             enum LineType type = Gates[i].line.definition->type;
             if(type == dual || type == straight && i < gateCount && Gates[i].level != 1)
@@ -383,18 +383,30 @@ int main(void)
             }
 
             Gates[i].gate.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
-            Gates[i].gate.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) - 50;
+            Gates[i].gate.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 60;
 
             Gates[i].line.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level) + 75;
-            Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) - 50;
+            Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 60;
+
+            if(i == 0)
+            {
+                Gates[i].line.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level) + 50;
+            }
 
             if(i >= gateCount)
             {
                 enum LineType newType = dual;
-                if(Gates[i].place == 1 || Gates[i].place == Gates[i].level)
+                if(Gates[i].place == 1)
                 {
+                    Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 40;
                     newType = straight;
                 }
+                if(Gates[i].place == Gates[i].level)
+                {
+                    Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 80;
+                    newType = straight;
+                }
+
                 Gates[i].line.definition = FindLineDefinition(Gates[i].line.definition->color, newType);
             }
         }
@@ -521,6 +533,7 @@ int main(void)
             }
            
             DrawTexture(*Gates[i].line.definition->texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
+            //DrawRectangleLines(Gates[i].line.rect.x, Gates[i].line.rect.y, Gates[i].line.rect.w, Gates[i].line.rect.h, RED);
 
             if(i < gateCount)
             {
@@ -528,7 +541,7 @@ int main(void)
             }
         }
 
-        DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
+        //DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
 
         EndDrawing();
         //---------------------------------------------------------------------------------
