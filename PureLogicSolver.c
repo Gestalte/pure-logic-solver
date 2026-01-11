@@ -11,11 +11,6 @@
 const int ScreenWidth  = 800;
 const int ScreenHeight = 500;
 
-const int GateWidth = 100;
-const int GateHeight = 50;
-const int LineHeight = 50;
-const int LineWidth = 50;
-
 enum GateName
 {
     AND,
@@ -502,7 +497,7 @@ int main(void)
             // Draw gate type selection menu
             if(selectedGate != 0)
             {
-                DrawRectangle(selectedGate->gate.rect.x, selectedGate->gate.rect.y, selectedGate->gate.rect.w, selectedGate->gate.rect.h, GREEN);
+                DrawRectangleLines(selectedGate->gate.rect.x, selectedGate->gate.rect.y, selectedGate->gate.rect.w, selectedGate->gate.rect.h, GREEN);
 
                 DrawRectangle(gateMenu.x, gateMenu.y, gateMenu.w, gateMenu.h, LIGHTGRAY);
                 DrawRectangleLines(gateMenu.x, gateMenu.y, gateMenu.w, gateMenu.h, DARKGRAY);
@@ -520,21 +515,17 @@ int main(void)
         // Draw gates
         for (int i = 0; i < drawCount; i++) 
         {
-            if(Gates[i].gate.works)
+            if(Gates[i].gate.works && !isEditMode)
             {
                 DrawRectangle(Gates[i].gate.rect.x, Gates[i].gate.rect.y, Gates[i].gate.rect.w, Gates[i].gate.rect.h, GREEN);
             }
            
             DrawTexture(*Gates[i].line.definition->texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
-            //DrawRectangleLines(Gates[i].line.rect.x, Gates[i].line.rect.y, Gates[i].line.rect.w, Gates[i].line.rect.h, GREEN);
 
             if(i < gateCount)
             {
                 DrawTexture(*Gates[i].gate.texture, Gates[i].gate.rect.x, Gates[i].gate.rect.y, WHITE);
             }
-            //DrawRectangleLines(Gates[i].body.rect.x, Gates[i].body.rect.y, Gates[i].body.rect.w, Gates[i].body.rect.h, RED);
-            
-            //DrawRectangleLines(Gates[i].gate.rect.x + 20, Gates[i].gate.rect.y, 60, Gates[i].gate.rect.h, BLUE);
         }
 
         DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
