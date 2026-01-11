@@ -169,7 +169,7 @@ static void ValidateGates(int numberOfGates)
             || Gates[i].line.definition->color == gray)
         {
             Gates[i].gate.works = false;
-            return;
+            continue;
         }
 
         inA = A->line.definition->color == white;
