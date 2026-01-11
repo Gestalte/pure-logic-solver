@@ -6,9 +6,15 @@
 #define TEXTURE_COUNT 21
 #define GATE_COUNT 28
 #define FONT_SIZE 16
+#define LINE_TYPES 15
 
 const int ScreenWidth  = 800;
 const int ScreenHeight = 500;
+
+const int GateWidth = 100;
+const int GateHeight = 50;
+const int LineHeight = 50;
+const int LineWidth = 50;
 
 enum GateName
 {
@@ -20,12 +26,28 @@ enum GateName
     XNOR
 };
 
-enum LineState
+enum LineColor
 {
     black,
     white,
     gray
 };
+
+enum LineType
+{
+    up,
+    down,
+    fork,
+    dual,
+    straight 
+};
+
+typedef struct
+{
+    enum LineColor color;
+    enum LineType type;
+    Texture2D* texture;
+} LineDefinition;
 
 typedef struct
 {
@@ -43,10 +65,9 @@ typedef struct
 
 typedef struct
 {
-    enum LineState color;
+    LineDefinition* definition;
     bool locked;
-    MyRect rect;
-    Texture2D* texture;
+    MyRect rect; // TODO: Separate rects for line and ends?
 } Line;
 
 typedef struct
@@ -73,16 +94,16 @@ char* ImageFilenames[] =
     "resources/gates/NOR.png",
     "resources/gates/XOR.png",
     "resources/gates/XNOR.png",
-    "resources/lines/up_white.png",
-    "resources/lines/down_white.png",
-    "resources/lines/fork_white.png",
-    "resources/lines/dual_white.png",
-    "resources/lines/straight_white.png",
     "resources/lines/up_black.png",
     "resources/lines/down_black.png",
     "resources/lines/fork_black.png",
     "resources/lines/dual_black.png",
     "resources/lines/straight_black.png",
+    "resources/lines/up_white.png",
+    "resources/lines/down_white.png",
+    "resources/lines/fork_white.png",
+    "resources/lines/dual_white.png",
+    "resources/lines/straight_white.png",
     "resources/lines/up_gray.png",
     "resources/lines/down_gray.png",
     "resources/lines/fork_gray.png",
@@ -91,6 +112,7 @@ char* ImageFilenames[] =
 };
 
 Texture2D Textures[TEXTURE_COUNT];
+LineDefinition Lines[LINE_TYPES];
 GateComplex Gates[GATE_COUNT]; // TODO: These aren't just gates, give them a better name.
 
 static int clampInclusive(int value, int min, int max)
@@ -107,7 +129,6 @@ static void DrawButton(Button *button)
 
 static bool CheckLeftClick(MyRect* rect)
 {
-
     Rectangle r = {(float)rect->x,(float)rect->y,(float)rect->w,(float)rect->h};
     return CheckCollisionPointRec(GetMousePosition(), r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
@@ -120,29 +141,6 @@ static int NumberOfGates(int level)
         count += i + 1;
     }
     return count;
-}
-
-// TODO: Maybe rewrite to use enums instead?
-static void CheckLineClick(GateComplex* gate, Texture2D* gray_, Texture2D* white_, Texture2D* black_)
-{
-    if(gate->line.texture == gray_)
-    {
-       gate->line.texture = white_;
-       gate->line.locked = true;
-       gate->line.color = white;
-    }
-    else if(gate->line.texture == white_)
-    {
-        gate->line.texture = black_;
-        gate->line.locked = true;
-        gate->line.color = black;
-    }
-    else if(gate->line.texture == black_)
-    {
-        gate->line.texture = gray_;
-        gate->line.locked = false;
-        gate->line.color = gray;
-    }
 }
 
 static GateComplex* GetGateComplex(int level, int place)
@@ -171,22 +169,24 @@ static void ValidateGates(int numberOfGates)
         GateComplex* A = GetGateComplex(level + 1, place);
         GateComplex* B = GetGateComplex(level + 1, place + 1);
 
-        if(A->line.color == gray || B->line.color == gray || Gates[i].line.color == gray)
+        if(A->line.definition->color == gray 
+            || B->line.definition->color == gray 
+            || Gates[i].line.definition->color == gray)
         {
             Gates[i].gate.works = false;
             return;
         }
 
-        inA = A->line.color == white;
-        inB = B->line.color == white;
-        out = Gates[i].line.color == white;
+        inA = A->line.definition->color == white;
+        inB = B->line.definition->color == white;
+        out = Gates[i].line.definition->color == white;
 
         switch (Gates[i].gate.type) {
             case AND:
                 if(inA && inB)          result = true;
                 else if(inA | inB)      result = false;
                 else if(!inA && !inB)   result = false;
-                break; 
+                break;
             case NAND:
                 if(inA && inB)          result = false;
                 else if(inA | inB)      result = true;
@@ -217,6 +217,41 @@ static void ValidateGates(int numberOfGates)
     }
 }
 
+static LineDefinition* FindLineDefinition(enum LineColor color, enum LineType type)
+{
+    for (int i = 0; i<LINE_TYPES; i++) 
+    {
+        if(Lines[i].color == color && Lines[i].type == type)
+        {
+            return &Lines[i];
+        }
+    }
+    return 0;
+}
+
+static LineDefinition* SwapLineDefinition(enum LineColor color, Line* line)
+{
+    enum LineType type = line->definition->type;
+    return FindLineDefinition(color, type);
+}
+
+static LineDefinition* NextLineColor(Line* line)
+{
+    enum LineColor newColor = black;
+    switch (line->definition->color) {
+        case black:
+            newColor = white;
+            break;
+        case white:
+            newColor = gray;
+            break;
+        case gray:
+            newColor = black;
+            break;
+    }
+    return SwapLineDefinition(newColor, line);
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -238,29 +273,21 @@ int main(void)
   
     Texture2D* andGate = &Textures[0];
 
-    Texture2D* grayStraight  = &Textures[20];
-    Texture2D* grayDual      = &Textures[19];
-    Texture2D* grayFork      = &Textures[18];
-    Texture2D* grayDown      = &Textures[17];
-    Texture2D* grayUp        = &Textures[16];
-
-    Texture2D* blackStraight = &Textures[15];
-    Texture2D* blackDual     = &Textures[14];
-    Texture2D* blackFork     = &Textures[13];
-    Texture2D* blackDown     = &Textures[12];
-    Texture2D* blackUp       = &Textures[11];
-    
-    Texture2D* whiteStraight = &Textures[10];
-    Texture2D* whiteDual     = &Textures[9];
-    Texture2D* whiteFork     = &Textures[8];
-    Texture2D* whiteDown     = &Textures[7];
-    Texture2D* whiteUp       = &Textures[6];
-   
+    int index = 0;
+    for(enum LineColor color = black; color <= gray; color++)
+    {
+        for(enum LineType type = up; type <= straight; type++)
+        { 
+            LineDefinition def = {color, type, &Textures[(5 * (color + 1)) + (type + 1)]};
+            Lines[index] = def;
+            index++;
+        }
+    }
+       
     int centerX = ScreenWidth/2;
     int centerY = ScreenHeight/2;
     char level = 0;
     char place = 0;
-    
 
     for (int i = 0; i < GATE_COUNT; i++) 
     {
@@ -276,7 +303,7 @@ int main(void)
            6 | 6 | 
            7 |
            */
-        Line line = {gray, false, {0, 0, 50, 50}, grayFork};
+        Line line = {FindLineDefinition(gray, fork), false, {0,0,50,50}};
 
         if(level != place)
         {
@@ -290,17 +317,17 @@ int main(void)
 
         if(place == 1)
         {
-            line.texture = grayDown;
+            line.definition = FindLineDefinition(gray,down);
         }
 
         if(level == place)
         {
-            line.texture = grayUp;
+            line.definition = FindLineDefinition(gray, up);
         }
 
         if(level == 1 && place == 1)
         {
-            line.texture = grayStraight;
+            line.definition = FindLineDefinition(gray, straight);
         }
         
         Gate gate = {AND, false, {0, 0, 100, 50}, andGate}; 
@@ -340,16 +367,41 @@ int main(void)
         }
 
         int totalGateWidth = levels * 100;
-
-        for (int i = 0; i < gateCount; i++) 
+        int drawCount = NumberOfGates(levels + 1);
+        for (int i = 0; i < drawCount; i++) 
         {
             int totalLevelHeight = (Gates[i].level * 50);
+
+            enum LineType type = Gates[i].line.definition->type;
+            if(type == dual || type == straight && i < gateCount && Gates[i].level != 1)
+            {
+                enum LineType newType = down;
+                if(type == dual)
+                {
+                    newType = fork;
+                }
+                else if (Gates[i].place == Gates[i].level)
+                {
+                    newType = up;
+                }
+                Gates[i].line.definition = FindLineDefinition(Gates[i].line.definition->color, newType);
+            }
 
             Gates[i].gate.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
             Gates[i].gate.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) - 50;
 
             Gates[i].line.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level) + 75;
             Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (50 * Gates[i].place) - 50;
+
+            if(i >= gateCount)
+            {
+                enum LineType newType = dual;
+                if(Gates[i].place == 1 || Gates[i].place == Gates[i].level)
+                {
+                    newType = straight;
+                }
+                Gates[i].line.definition = FindLineDefinition(Gates[i].line.definition->color, newType);
+            }
         }
 
         if(CheckLeftClick(&saveEdit.rect))
@@ -381,30 +433,11 @@ int main(void)
             {
                 for (int i = 0; i < 6; i++) 
                 {
-                    MyRect rect = {gateMenu.x + (i * 100), gateMenu.y + 10, 100,50};
+                    MyRect rect = {gateMenu.x + (i * 100), gateMenu.y + 10, 100, 50};
                     if(CheckLeftClick(&rect))
                     {
                         selectedGate->gate.texture = &Textures[i];
-                        switch (i) {
-                        case 0: 
-                            selectedGate->gate.type = AND;
-                            break;
-                        case 1:
-                            selectedGate->gate.type = NAND;
-                            break;
-                        case 2:
-                            selectedGate->gate.type = OR;
-                            break;
-                        case 3:
-                            selectedGate->gate.type = NOR;
-                            break;
-                        case 4:
-                            selectedGate->gate.type = XOR;
-                            break;
-                        case 5:
-                            selectedGate->gate.type = XNOR;
-                            break;
-                        }
+                        selectedGate->gate.type = i;
                         selectedGate = 0;
                         break;
                     }
@@ -412,65 +445,43 @@ int main(void)
             }
 
             // Check for line changes
-            for (int i = 0; i < gateCount; i++)
+            for (int i = 0; i < drawCount; i++)
             {
                 if(CheckLeftClick(&Gates[i].line.rect))
                 {
-                     CheckLineClick(&Gates[i], grayFork, whiteFork, blackFork);
-                     CheckLineClick(&Gates[i], grayUp, whiteUp, blackUp);
-                     CheckLineClick(&Gates[i], grayDown, whiteDown, blackDown);
-                     CheckLineClick(&Gates[i], grayStraight, whiteStraight, blackStraight);
-                     CheckLineClick(&Gates[i], grayDual, whiteDual, blackDual);
+                    Gates[i].line.definition = NextLineColor(&Gates[i].line);
+                    Gates[i].line.locked = Gates[i].line.definition->color == gray ? false : true;
                 }
             }
         }
         else
         {
             // Check for line changes
-            for (int i = 0; i < gateCount; i++)
+            for (int i = 0; i < drawCount; i++)
             {
                 if(CheckLeftClick(&Gates[i].line.rect) && Gates[i].line.locked == false)
                 {
-                    CheckLineClick(&Gates[i], grayFork, whiteFork, blackFork);
-                    CheckLineClick(&Gates[i], grayUp, whiteUp, blackUp);
-                    CheckLineClick(&Gates[i], grayDown, whiteDown, blackDown);
-                    CheckLineClick(&Gates[i], grayStraight, whiteStraight, blackStraight);
-                    CheckLineClick(&Gates[i], grayDual, whiteDual, blackDual);                
-                    Gates[i].line.locked = false; // CheckLineClick sets locked so set it back.
+                    Gates[i].line.definition = NextLineColor(&Gates[i].line);
                 }
             }
             
             ValidateGates(gateCount);
 
+            // Reset button click
             if(CheckLeftClick(&resetLines.rect))
             {
                 for (int i = 0; i < GATE_COUNT; i++) 
                 {
                     if(Gates[i].line.locked == false)
                     {
-                        if(Gates[i].level == Gates[i].place && Gates[i].level != 1)
-                        {
-                            Gates[i].line.texture = grayUp;
-                        }
-                        else if(Gates[i].place == 1 && Gates[i].level != 1)
-                        {
-                            Gates[i].line.texture = grayDown;
-                        }
-                        else if(Gates[i].level == 1 && Gates[i].place == 1)
-                        {
-                            Gates[i].line.texture = grayStraight;
-                        }
-                        else
-                        {
-                            Gates[i].line.texture = grayFork;
-                        }
+                        Gates[i].line.definition = SwapLineDefinition(gray, &Gates[i].line);
                     }
 
-                    Gates[i].line.color = gray;
                     Gates[i].gate.works = false;
                 }
             }
         }
+
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -506,18 +517,24 @@ int main(void)
             DrawButton(&resetLines);
         }
 
-        for (int i = 0; i < gateCount; i++) 
+        // Draw gates
+        for (int i = 0; i < drawCount; i++) 
         {
             if(Gates[i].gate.works)
             {
                 DrawRectangle(Gates[i].gate.rect.x, Gates[i].gate.rect.y, Gates[i].gate.rect.w, Gates[i].gate.rect.h, GREEN);
             }
-            DrawTexture(*Gates[i].line.texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
+           
+            DrawTexture(*Gates[i].line.definition->texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
             //DrawRectangleLines(Gates[i].line.rect.x, Gates[i].line.rect.y, Gates[i].line.rect.w, Gates[i].line.rect.h, GREEN);
-            DrawTexture(*Gates[i].gate.texture, Gates[i].gate.rect.x, Gates[i].gate.rect.y, WHITE);
+
+            if(i < gateCount)
+            {
+                DrawTexture(*Gates[i].gate.texture, Gates[i].gate.rect.x, Gates[i].gate.rect.y, WHITE);
+            }
             //DrawRectangleLines(Gates[i].body.rect.x, Gates[i].body.rect.y, Gates[i].body.rect.w, Gates[i].body.rect.h, RED);
             
-            DrawRectangleLines(Gates[i].gate.rect.x + 20, Gates[i].gate.rect.y, 60, Gates[i].gate.rect.h, BLUE);
+            //DrawRectangleLines(Gates[i].gate.rect.x + 20, Gates[i].gate.rect.y, 60, Gates[i].gate.rect.h, BLUE);
         }
 
         DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
