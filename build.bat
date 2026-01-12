@@ -18,7 +18,7 @@ xcopy /s/i/D/Y !RESOURCES! !OUTPUT_DIR!\resources
 set OUTPUT_FLAG=/Fe: "!GAME_NAME!"
 set COMPILATION_FLAGS=/std:c11 /Od /Zi /utf-8 /validate-charset /EHsc
 set WARNING_FLAGS=/W3 /sdl
-set SUBSYSTEM_FLAGS=/DEBUG
+set SUBSYSTEM_FLAGS=/DEBUG /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup 
 set LINK_FLAGS=/link kernel32.lib user32.lib shell32.lib winmm.lib gdi32.lib opengl32.lib
 set "TEMP_DIR=temp"
 
