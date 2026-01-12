@@ -9,7 +9,7 @@
 #define LINE_TYPES 15
 
 const int ScreenWidth  = 800;
-const int ScreenHeight = 500;
+const int ScreenHeight = 600;
 
 enum GateName
 {
