@@ -8,7 +8,7 @@
 #define FONT_SIZE 16
 #define LINE_TYPES 15
 
-const int ScreenWidth  = 800;
+const int ScreenWidth  = 900;
 const int ScreenHeight = 600;
 
 enum GateName
@@ -108,7 +108,7 @@ char* ImageFilenames[] =
 
 Texture2D Textures[TEXTURE_COUNT];
 LineDefinition Lines[LINE_TYPES];
-GateComplex Gates[GATE_COUNT]; // TODO: These aren't just gates, give them a better name.
+GateComplex Gates[GATE_COUNT];
 
 static int clampInclusive(int value, int min, int max)
 {
@@ -262,6 +262,30 @@ int main(void)
     for (int i = 0; i < TEXTURE_COUNT; i++) 
     {
         Image img = LoadImage(ImageFilenames[i]);
+
+        if(i>=6)
+        {
+            if(i == 6 || i == 11 || i == 16) // UP
+            {
+                ImageCrop(&img, (Rectangle){0, 0, 50, 26});
+            }
+
+            if(i == 7 || i == 12 || i == 17) // DOWN
+            {
+                ImageCrop(&img, (Rectangle){0, 24, 50, 26});
+            }
+
+            if(i == 9 || i == 14 || i == 19) // DUAL
+            {
+                ImageCrop(&img, (Rectangle){24, 0, 26, 50});
+            }
+
+            if(i == 10 || i == 15 || i == 20) // STRAIGHT
+            {
+                ImageCrop(&img, (Rectangle){24, 21, 26, 10});
+            }
+        }
+
         Textures[i] = LoadTextureFromImage(img);
         UnloadImage(img);
     }
@@ -298,7 +322,8 @@ int main(void)
            6 | 6 | 
            7 |
            */
-        Line line = {FindLineDefinition(gray, fork), false, {0,0,50,50}};
+        LineDefinition* lineDefinition = FindLineDefinition(gray, fork);
+        Line line = {lineDefinition, false, (MyRect){0, 0, lineDefinition->texture->width, lineDefinition->texture->height}};
 
         if(level != place)
         {
@@ -325,7 +350,7 @@ int main(void)
             line.definition = FindLineDefinition(gray, straight);
         }
         
-        Gate gate = {AND, false, {0, 0, 100, 50}, andGate}; 
+        Gate gate = {AND, false, {0, 0, andGate->width, andGate->height}, andGate}; 
 
         GateComplex gateComplex = {level, place, line , gate };
         Gates[i] = gateComplex;
@@ -361,11 +386,11 @@ int main(void)
             levels = clampInclusive(++levels, 1, 7);
         }
 
-        int totalGateWidth = levels * 100;
+        int totalGateWidth = levels * 110;
         int drawCount = NumberOfGates(levels + 1);
         for (int i = 0; i < drawCount; i++) 
         {
-            int totalLevelHeight = (Gates[i].level * 60);
+            int totalLevelHeight = (Gates[i].level * 50) + ((Gates[i].level - 1) * 10);
 
             enum LineType type = Gates[i].line.definition->type;
             if(type == dual || type == straight && i < gateCount && Gates[i].level != 1)
@@ -382,15 +407,20 @@ int main(void)
                 Gates[i].line.definition = FindLineDefinition(Gates[i].line.definition->color, newType);
             }
 
-            Gates[i].gate.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level);
-            Gates[i].gate.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 60;
+            Gates[i].gate.rect.x = centerX + (totalGateWidth/2) - (110 * Gates[i].level) + 25;
+            Gates[i].gate.rect.y = centerY - (totalLevelHeight/2) + (60 * (Gates[i].place - 1));
 
-            Gates[i].line.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level) + 75;
-            Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 60;
+            Gates[i].line.rect.x = Gates[i].gate.rect.x + 60;
+            Gates[i].line.rect.y = Gates[i].gate.rect.y;
 
             if(i == 0)
             {
-                Gates[i].line.rect.x = centerX + (totalGateWidth/2) - (100 * Gates[i].level) + 50;
+                Gates[i].line.rect.y = Gates[i].line.rect.y - 3;
+            }
+
+            if(Gates[i].place == 1)
+            {
+                Gates[i].line.rect.y = Gates[i].line.rect.y + 24;
             }
 
             if(i >= gateCount)
@@ -398,17 +428,20 @@ int main(void)
                 enum LineType newType = dual;
                 if(Gates[i].place == 1)
                 {
-                    Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 40;
+                    Gates[i].line.rect.y = Gates[i].line.rect.y + 16;
                     newType = straight;
                 }
                 if(Gates[i].place == Gates[i].level)
                 {
-                    Gates[i].line.rect.y = centerY - (totalLevelHeight/2) + (60 * Gates[i].place) - 80;
                     newType = straight;
                 }
 
                 Gates[i].line.definition = FindLineDefinition(Gates[i].line.definition->color, newType);
+                Gates[i].line.rect.x = Gates[i].line.rect.x + 25;
             }
+
+            Gates[i].line.rect.h = Gates[i].line.definition->texture->height;
+            Gates[i].line.rect.w = Gates[i].line.definition->texture->width;
         }
 
         if(CheckLeftClick(&saveEdit.rect))
@@ -524,7 +557,7 @@ int main(void)
             DrawButton(&resetLines);
         }
 
-        // Draw gates
+        // Draw lines
         for (int i = 0; i < drawCount; i++) 
         {
             if(Gates[i].gate.works && !isEditMode)
@@ -534,14 +567,20 @@ int main(void)
            
             DrawTexture(*Gates[i].line.definition->texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
             //DrawRectangleLines(Gates[i].line.rect.x, Gates[i].line.rect.y, Gates[i].line.rect.w, Gates[i].line.rect.h, RED);
+        }
 
+        // Draw gates
+        for (int i = 0; i < drawCount; i++) 
+        {
             if(i < gateCount)
             {
                 DrawTexture(*Gates[i].gate.texture, Gates[i].gate.rect.x, Gates[i].gate.rect.y, WHITE);
+                //DrawRectangleLines(Gates[i].gate.rect.x, Gates[i].gate.rect.y, Gates[i].gate.rect.w, Gates[i].gate.rect.h, WHITE);
             }
         }
 
-        //DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
+//         DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
+//         DrawLine(ScreenWidth/2, 0, ScreenWidth/2, ScreenHeight, DARKBLUE);
 
         EndDrawing();
         //---------------------------------------------------------------------------------
