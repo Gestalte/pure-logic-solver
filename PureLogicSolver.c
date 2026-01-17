@@ -5,7 +5,7 @@
 #define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
 #define TEXTURE_COUNT 11
 #define TOTAL_TEXTURE_COUNT 21
-#define GATE_COUNT 43 
+#define GATE_COUNT 51 
 #define FONT_SIZE 16
 #define LINE_TYPES 15
 
@@ -390,12 +390,12 @@ int main(void)
 
         if(CheckLeftClick(&decrementLevel.rect))
         {
-            levels = clampInclusive(--levels, 1, 7);
+            levels = clampInclusive(--levels, 1, 8);
         }
 
         if(CheckLeftClick(&incrementLevel.rect))
         {
-            levels = clampInclusive(++levels, 1, 7);
+            levels = clampInclusive(++levels, 1, 8);
         }
 
         int totalGateWidth = levels * 80;
