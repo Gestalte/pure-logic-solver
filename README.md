@@ -10,19 +10,19 @@ This does not copy any of the game's levels, it only functions as a quality of l
 
 ### Set how many gates there should be
 
-![layout](https://github.com/Gestalte/pure-logic-solver/screenshots/blob/master/layout.PNG?raw=true)
+![layout](https://github.com/Gestalte/pure-logic-solver/blob/Master/screenshots/layout.PNG?raw=true)
 
 ### Set which lines should not be editable and what type of gate should be used
 
-![setup](https://github.com/Gestalte/pure-logic-solver/screenshots/blob/master/setup.PNG?raw=true)
+![setup](https://github.com/Gestalte/pure-logic-solver/blob/Master/screenshots/setup.PNG?raw=true)
 
 ### Play the game and get immeditate feedback
 
-![unvalidated](https://github.com/Gestalte/pure-logic-solver/screenshots/blob/master/unvalidated.PNG?raw=true)
+![unvalidated](https://github.com/Gestalte/pure-logic-solver/blob/Master/screenshots/unvalidated.PNG?raw=true)
 
 ### Level completed
 
-![validation](https://github.com/Gestalte/pure-logic-solver/screenshots/blob/master/validation.PNG?raw=true)
+![validation](https://github.com/Gestalte/pure-logic-solver/blob/Master/screenshots/validation.PNG?raw=true)
 
 ## How to build
 
