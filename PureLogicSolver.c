@@ -323,7 +323,7 @@ int main(void)
     for (int i = 0; i < GATE_COUNT; i++) 
     {
         /* There are the same number of places as the level number 
-           --------------------/--------------
+           -----------------------------------
            7 | 6 | 5 | 4 | 3 | 2 | 1 | levels 
            ----------------------------------
            1 | 1 | 1 | 1 | 1 | 1 | 1 | places
@@ -582,7 +582,6 @@ int main(void)
             }
            
             DrawTexture(*Gates[i].line.definition->texture, Gates[i].line.rect.x, Gates[i].line.rect.y, WHITE);
-            //DrawRectangleLines(Gates[i].line.rect.x, Gates[i].line.rect.y, Gates[i].line.rect.w, Gates[i].line.rect.h, RED);
         }
 
         // Draw gates
@@ -591,18 +590,8 @@ int main(void)
             if(i < gateCount)
             {
                 DrawTexture(*Gates[i].gate.texture, Gates[i].gate.rect.x, Gates[i].gate.rect.y, WHITE);
-                //DrawRectangleLines(Gates[i].gate.rect.x, Gates[i].gate.rect.y, Gates[i].gate.rect.w, Gates[i].gate.rect.h, WHITE);
-
-                // Clickable area of gate
-//                 MyRect r = Gates[i].gate.rect;
-//                 r.x = r.x + 14;
-//                 r.w = r.w - 28;
-//                 DrawRectangleLines(r.x, r.y, r.w, r.h, WHITE);
             }
         }
-
-//          DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
-//          DrawLine(ScreenWidth/2, 0, ScreenWidth/2, ScreenHeight, DARKBLUE);
 
         EndDrawing();
         //---------------------------------------------------------------------------------
@@ -611,7 +600,7 @@ int main(void)
     // De-Initialization
     //--------------------------------------------------------------------------------------
 
-    for (int i = 0; i<GATE_COUNT; i++) 
+    for (int i = 0; i < TEXTURE_COUNT; i++) 
     {
         UnloadTexture(Textures[i]);
     }
