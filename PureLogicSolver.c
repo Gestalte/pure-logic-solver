@@ -3,7 +3,8 @@
 #include <stdio.h>
 
 #define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
-#define TEXTURE_COUNT 21
+#define TEXTURE_COUNT 11
+#define TOTAL_TEXTURE_COUNT 21
 #define GATE_COUNT 43 
 #define FONT_SIZE 16
 #define LINE_TYPES 15
@@ -89,24 +90,14 @@ char* ImageFilenames[] =
     "resources/gates/NOR.png",
     "resources/gates/XOR.png",
     "resources/gates/XNOR.png",
-    "resources/lines/up_black.png",
-    "resources/lines/down_black.png",
-    "resources/lines/fork_black.png",
-    "resources/lines/dual_black.png",
-    "resources/lines/straight_black.png",
     "resources/lines/up_white.png",
     "resources/lines/down_white.png",
     "resources/lines/fork_white.png",
     "resources/lines/dual_white.png",
     "resources/lines/straight_white.png",
-    "resources/lines/up_gray.png",
-    "resources/lines/down_gray.png",
-    "resources/lines/fork_gray.png",
-    "resources/lines/dual_gray.png",
-    "resources/lines/straight_gray.png",
 };
 
-Texture2D Textures[TEXTURE_COUNT];
+Texture2D Textures[TOTAL_TEXTURE_COUNT];
 LineDefinition Lines[LINE_TYPES];
 GateComplex Gates[GATE_COUNT];
 
@@ -258,32 +249,53 @@ int main(void)
     InitWindow(ScreenWidth, ScreenHeight, "Pure Logic Solver");
 
     // NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
-
+    
     for (int i = 0; i < TEXTURE_COUNT; i++) 
     {
         Image img = LoadImage(ImageFilenames[i]);
 
-        if(i>=6)
+        if(i >= 6)
         {
-            if(i == 6 || i == 11 || i == 16) // UP
+            if(i == 6) // UP
             {
                 ImageCrop(&img, (Rectangle){0, 0, 50, 26});
             }
 
-            if(i == 7 || i == 12 || i == 17) // DOWN
+            if(i == 7) // DOWN
             {
                 ImageCrop(&img, (Rectangle){0, 24, 50, 26});
             }
 
-            if(i == 9 || i == 14 || i == 19) // DUAL
+            if(i == 9) // DUAL
             {
                 ImageCrop(&img, (Rectangle){24, 0, 26, 50});
             }
 
-            if(i == 10 || i == 15 || i == 20) // STRAIGHT
+            if(i == 10) // STRAIGHT
             {
                 ImageCrop(&img, (Rectangle){24, 21, 26, 10});
             }
+           
+            int textureIndex = i;
+
+            Image imBlack = ImageCopy(img);
+            ImageColorTint(&imBlack, BLACK);
+            Textures[i] = LoadTextureFromImage(imBlack);
+            textureIndex = textureIndex + 5;
+            
+            // white
+            Textures[textureIndex] = LoadTextureFromImage(img);
+            textureIndex = textureIndex + 5;
+            
+            Image imGray = ImageCopy(img);
+            ImageColorTint(&imGray, GRAY);
+            Textures[textureIndex] = LoadTextureFromImage(imGray);
+
+            UnloadImage(imBlack);
+            UnloadImage(imGray);
+            UnloadImage(img);
+
+            continue;
         }
 
         Textures[i] = LoadTextureFromImage(img);
@@ -311,7 +323,7 @@ int main(void)
     for (int i = 0; i < GATE_COUNT; i++) 
     {
         /* There are the same number of places as the level number 
-           ----------------------------------
+           --------------------/--------------
            7 | 6 | 5 | 4 | 3 | 2 | 1 | levels 
            ----------------------------------
            1 | 1 | 1 | 1 | 1 | 1 | 1 | places
