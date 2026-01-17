@@ -337,7 +337,7 @@ int main(void)
 
         if(place == 1)
         {
-            line.definition = FindLineDefinition(gray,down);
+            line.definition = FindLineDefinition(gray, down);
         }
 
         if(level == place)
@@ -386,7 +386,7 @@ int main(void)
             levels = clampInclusive(++levels, 1, 7);
         }
 
-        int totalGateWidth = levels * 110;
+        int totalGateWidth = levels * 80;
         int drawCount = NumberOfGates(levels + 1);
         for (int i = 0; i < drawCount; i++) 
         {
@@ -407,10 +407,10 @@ int main(void)
                 Gates[i].line.definition = FindLineDefinition(Gates[i].line.definition->color, newType);
             }
 
-            Gates[i].gate.rect.x = centerX + (totalGateWidth/2) - (110 * Gates[i].level) + 25;
+            Gates[i].gate.rect.x = centerX + (totalGateWidth/2) - (80 * Gates[i].level) + 10;
             Gates[i].gate.rect.y = centerY - (totalLevelHeight/2) + (60 * (Gates[i].place - 1));
 
-            Gates[i].line.rect.x = Gates[i].gate.rect.x + 60;
+            Gates[i].line.rect.x = Gates[i].gate.rect.x + 45;
             Gates[i].line.rect.y = Gates[i].gate.rect.y;
 
             if(i == 0)
@@ -454,7 +454,12 @@ int main(void)
         {
             for (int i = 0; i < gateCount ; i++) 
             {
-                if(CheckLeftClick(&Gates[i].gate.rect))
+                // r represents the clickable area of the gate which is smaller than its texture.
+                MyRect r = Gates[i].gate.rect;
+                r.x = r.x + 14;
+                r.w = r.w - 28;
+
+                if(CheckLeftClick(&r))
                 {
                     selectedGate = &Gates[i];
                     printf("selectedGate: %d-%d\n", Gates[i].level, Gates[i].place);
@@ -522,7 +527,6 @@ int main(void)
             }
         }
 
-
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
@@ -576,11 +580,17 @@ int main(void)
             {
                 DrawTexture(*Gates[i].gate.texture, Gates[i].gate.rect.x, Gates[i].gate.rect.y, WHITE);
                 //DrawRectangleLines(Gates[i].gate.rect.x, Gates[i].gate.rect.y, Gates[i].gate.rect.w, Gates[i].gate.rect.h, WHITE);
+
+                // Clickable area of gate
+//                 MyRect r = Gates[i].gate.rect;
+//                 r.x = r.x + 14;
+//                 r.w = r.w - 28;
+//                 DrawRectangleLines(r.x, r.y, r.w, r.h, WHITE);
             }
         }
 
-//         DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
-//         DrawLine(ScreenWidth/2, 0, ScreenWidth/2, ScreenHeight, DARKBLUE);
+//          DrawLine(0, ScreenHeight/2, ScreenWidth, ScreenHeight/2, DARKBLUE);
+//          DrawLine(ScreenWidth/2, 0, ScreenWidth/2, ScreenHeight, DARKBLUE);
 
         EndDrawing();
         //---------------------------------------------------------------------------------
