@@ -5,12 +5,12 @@
 #define BACKGROUNDBLUE CLITERAL(Color){0, 158, 255, 255}
 #define TEXTURE_COUNT 11
 #define TOTAL_TEXTURE_COUNT 21
-#define GATE_COUNT 51 
+#define GATE_COUNT 60 
 #define FONT_SIZE 16
 #define LINE_TYPES 15
 
 const int ScreenWidth  = 900;
-const int ScreenHeight = 650;
+const int ScreenHeight = 700;
 
 enum GateName
 {
@@ -232,7 +232,7 @@ static LineDefinition* NextLineColor(Line* line, enum LineColor nextColor)
     enum LineColor newColor = gray;
     if(line->definition->color == gray)
     {
-        newColor = testColor;
+        newColor = nextColor;
     }
     return SwapLineDefinition(newColor, line);
 }
@@ -389,12 +389,12 @@ int main(void)
 
         if(CheckLeftClick(&decrementLevel.rect))
         {
-            levels = clampInclusive(--levels, 1, 8);
+            levels = clampInclusive(--levels, 1, 9);
         }
 
         if(CheckLeftClick(&incrementLevel.rect))
         {
-            levels = clampInclusive(++levels, 1, 8);
+            levels = clampInclusive(++levels, 1, 9);
         }
 
         int totalGateWidth = levels * 80;
