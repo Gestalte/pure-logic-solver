@@ -119,6 +119,12 @@ static bool CheckLeftClick(MyRect* rect)
     return CheckCollisionPointRec(GetMousePosition(), r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
+static bool CheckRightClick(MyRect* rect)
+{
+    Rectangle r = {(float)rect->x,(float)rect->y,(float)rect->w,(float)rect->h};
+    return CheckCollisionPointRec(GetMousePosition(), r) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON);
+}
+
 static int NumberOfGates(int level)
 {
     int count = 0;
@@ -221,19 +227,12 @@ static LineDefinition* SwapLineDefinition(enum LineColor color, Line* line)
     return FindLineDefinition(color, type);
 }
 
-static LineDefinition* NextLineColor(Line* line)
+static LineDefinition* NextLineColor(Line* line, enum LineColor nextColor)
 {
-    enum LineColor newColor = black;
-    switch (line->definition->color) {
-        case black:
-            newColor = white;
-            break;
-        case white:
-            newColor = gray;
-            break;
-        case gray:
-            newColor = black;
-            break;
+    enum LineColor newColor = gray;
+    if(line->definition->color == gray)
+    {
+        newColor = testColor;
     }
     return SwapLineDefinition(newColor, line);
 }
@@ -504,9 +503,15 @@ int main(void)
             // Check for line changes
             for (int i = 0; i < drawCount; i++)
             {
+                if(CheckRightClick(&Gates[i].line.rect))
+                {
+                    Gates[i].line.definition = NextLineColor(&Gates[i].line, black);
+                    Gates[i].line.locked = Gates[i].line.definition->color == gray ? false : true;
+                }
+
                 if(CheckLeftClick(&Gates[i].line.rect))
                 {
-                    Gates[i].line.definition = NextLineColor(&Gates[i].line);
+                    Gates[i].line.definition = NextLineColor(&Gates[i].line, white);
                     Gates[i].line.locked = Gates[i].line.definition->color == gray ? false : true;
                 }
             }
@@ -516,9 +521,14 @@ int main(void)
             // Check for line changes
             for (int i = 0; i < drawCount; i++)
             {
+                if(CheckRightClick(&Gates[i].line.rect) && Gates[i].line.locked == false)
+                {
+                    Gates[i].line.definition = NextLineColor(&Gates[i].line, black);
+                }
+
                 if(CheckLeftClick(&Gates[i].line.rect) && Gates[i].line.locked == false)
                 {
-                    Gates[i].line.definition = NextLineColor(&Gates[i].line);
+                    Gates[i].line.definition = NextLineColor(&Gates[i].line, white);
                 }
             }
             
